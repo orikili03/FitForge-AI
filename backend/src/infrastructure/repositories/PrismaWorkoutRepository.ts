@@ -29,6 +29,17 @@ export class PrismaWorkoutRepository implements WorkoutRepository {
     return records.map((r) => this.toDomain(r));
   }
 
+  async getCompletedWorkoutIds(workoutIds: string[]): Promise<Set<string>> {
+    if (workoutIds.length === 0) return new Set();
+    const completions = await WorkoutCompletionModel.find({
+      workoutId: { $in: workoutIds },
+    })
+      .select("workoutId")
+      .lean()
+      .exec();
+    return new Set(completions.map((c) => c.workoutId));
+  }
+
   async recordCompletion(params: {
     workoutId: string;
     data: WorkoutCompletionData;

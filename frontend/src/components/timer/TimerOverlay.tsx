@@ -15,7 +15,7 @@ import {
 import type { WorkoutSessionResult } from '../../features/timer/timerTypes';
 import type { WorkoutResponse } from '../../features/workouts/workoutApi';
 
-const WORK_COLOR = '#f59e0b';
+const WORK_COLOR = '#fbbf24'; // lighter tinted amber
 const REST_COLOR = '#60a5fa';
 const RING_SIZE = 288;
 const RING_STROKE = 8;
@@ -265,14 +265,14 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
                     <RotateCcw size={20} strokeWidth={2} />
                   </button>
                   <div className="flex flex-1 items-center justify-center min-h-[4.5rem] rounded-ds-lg bg-ds-surface shadow-ds-sm border border-ds-border/80">
-                    <span className="text-2xl font-bold text-ds-text tabular-nums">
+                    <span className="text-2xl font-bold text-ds-text tabular-nums leading-none">
                       {roundCounter.rounds}
                     </span>
                   </div>
                   <button
                     onClick={roundCounter.addRound}
                     aria-label="Add round"
-                    className="flex flex-1 items-center justify-center min-h-[4.5rem] rounded-ds-lg bg-ds-accent text-stone-950 font-bold text-2xl tabular-nums shadow-ds-sm hover:bg-ds-accent-hover active:scale-[0.98] transition-all duration-200"
+                    className="flex flex-1 items-center justify-center min-h-[4.5rem] rounded-ds-lg bg-amber-400 text-stone-950 font-bold text-2xl tabular-nums leading-none shadow-ds-sm hover:bg-amber-300 active:scale-[0.98] transition-all duration-200"
                   >
                     +1
                   </button>
@@ -350,7 +350,7 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
                   <button
                     type="button"
                     onClick={handleEndWorkout}
-                    className="flex-1 rounded-ds-xl bg-amber-500/90 py-2.5 text-sm font-semibold text-stone-950 hover:bg-amber-500 transition-all duration-250"
+                    className="flex-1 rounded-ds-xl bg-amber-400 py-2.5 text-sm font-semibold text-stone-950 hover:bg-amber-300 transition-all duration-250"
                   >
                     End workout
                   </button>

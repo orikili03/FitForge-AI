@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Pencil, Play, RotateCw, Sparkles } from "lucide-react";
+import { CheckCircle, Pencil, Play, RotateCw, Sparkles } from "lucide-react";
 import { useWorkoutHistory, type WorkoutResponse } from "../features/workouts/workoutApi";
 import { TimerOverlay } from "../components/timer";
 
@@ -54,6 +54,12 @@ export function TodayWodPage() {
         )}
         {!isLoading && todayWod && (
           <div className="space-y-3 text-sm">
+            {todayWod.completed && (
+              <div className="flex items-center gap-2 text-emerald-400">
+                <CheckCircle size={26} className="shrink-0" aria-hidden />
+                <span className="font-medium">Done</span>
+              </div>
+            )}
             <div>
               <div className="font-medium text-ds-text">
                 {todayWod.wod.type} • {todayWod.wod.duration} min

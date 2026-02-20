@@ -19,6 +19,7 @@ export interface WorkoutResponse extends WorkoutSpec {
   date: string;
   type: string;
   durationMinutes: number;
+  completed?: boolean;
 }
 
 export interface CompleteWorkoutPayload {

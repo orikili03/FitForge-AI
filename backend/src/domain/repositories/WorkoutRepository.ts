@@ -15,6 +15,8 @@ export interface WorkoutRepository {
 
   listHistory(userId: string, limit?: number): Promise<Workout[]>;
 
+  getCompletedWorkoutIds(workoutIds: string[]): Promise<Set<string>>;
+
   recordCompletion(params: {
     workoutId: string;
     data: WorkoutCompletionData;

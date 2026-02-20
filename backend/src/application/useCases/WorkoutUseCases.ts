@@ -57,12 +57,15 @@ export class ListWorkoutHistoryUseCase {
 
   async execute(userId: string): Promise<WorkoutHistoryItemDTO[]> {
     const history = await this.workoutRepo.listHistory(userId, 50);
+    const ids = history.map((w) => w.id);
+    const completedIds = await this.workoutRepo.getCompletedWorkoutIds(ids);
     return history.map((w) => ({
       id: w.id,
       date: w.date.toISOString(),
       type: w.type,
       durationMinutes: w.durationMinutes,
       ...w.spec,
+      completed: completedIds.has(w.id),
     }));
   }
 }

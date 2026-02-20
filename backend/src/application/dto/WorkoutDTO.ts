@@ -14,7 +14,9 @@ export interface WorkoutResponseDTO extends WorkoutSpec {
   durationMinutes: number;
 }
 
-export interface WorkoutHistoryItemDTO extends WorkoutResponseDTO {}
+export interface WorkoutHistoryItemDTO extends WorkoutResponseDTO {
+  completed?: boolean;
+}
 
 export interface CompleteWorkoutRequestDTO {
   workoutId: string;
