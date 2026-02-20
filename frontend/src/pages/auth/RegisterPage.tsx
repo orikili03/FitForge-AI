@@ -82,17 +82,21 @@ export function RegisterPage() {
               className="w-full rounded-xl border border-ds-border bg-ds-surface-subtle px-4 py-3 text-sm text-ds-text placeholder:text-ds-text-muted transition-colors duration-250 focus:border-ds-border-strong focus:outline-none focus:ring-1 focus:ring-ds-border-strong"
               {...register("password", {
                 required: true,
-                validate: () => passwordOk || "Password does not meet requirements",
+                validate: (value) => {
+                  const rules = passwordRules(value ?? "");
+                  const ok = rules.minLength && rules.hasLetter && rules.hasNumber;
+                  return ok || "Password does not meet requirements";
+                },
               })}
             />
             <div className="mt-2 space-y-1 text-xs">
-              <div className={checks.minLength ? "text-emerald-400" : "text-ds-text-muted"}>
+              <div className={checks.minLength ? "text-emerald-400" : "text-red-400"}>
                 {checks.minLength ? "✓" : "•"} At least 8 characters
               </div>
-              <div className={checks.hasLetter ? "text-emerald-400" : "text-ds-text-muted"}>
+              <div className={checks.hasLetter ? "text-emerald-400" : "text-red-400"}>
                 {checks.hasLetter ? "✓" : "•"} Includes a letter (A–Z)
               </div>
-              <div className={checks.hasNumber ? "text-emerald-400" : "text-ds-text-muted"}>
+              <div className={checks.hasNumber ? "text-emerald-400" : "text-red-400"}>
                 {checks.hasNumber ? "✓" : "•"} Includes a number (0–9)
               </div>
             </div>

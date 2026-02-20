@@ -1,8 +1,13 @@
 import axios from "axios";
 import { getAuthToken } from "../utils/authToken";
 
+const baseURL =
+  typeof import.meta.env.VITE_API_BASE_URL === "string" && import.meta.env.VITE_API_BASE_URL
+    ? import.meta.env.VITE_API_BASE_URL
+    : "";
+
 export const apiClient = axios.create({
-  baseURL: "",
+  baseURL,
 });
 
 apiClient.interceptors.request.use((config) => {

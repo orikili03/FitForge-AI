@@ -103,6 +103,29 @@ These agents are defined as interfaces in the domain layer and wired to a simple
 - Backend unit tests can be added under `backend/tests` to cover the workout engine and agents.
 - API integration tests can be written with Jest + Supertest targeting the Express app exported from `src/server.ts`.
 
+### Deploy to Render (Option A: separate frontend + backend)
+
+**Backend (API)**
+
+1. Create a **Web Service**, connect your repo.
+2. **Root Directory:** `backend`
+3. **Build Command:** `npm install && npm run build`
+4. **Start Command:** `npm start`
+5. **Environment:** `MONGO_URI`, `JWT_SECRET` (and optionally `NODE_ENV=production`).
+
+Note the backend URL (e.g. `https://your-api.onrender.com`).
+
+**Frontend (static site)**
+
+1. Create a **Static Site** (or **Web Service** with a static build), connect the same repo.
+2. **Root Directory:** `frontend`
+3. **Build Command:** `npm install && npm run build`
+4. **Publish directory:** `dist` (for Static Site) or configure your server to serve `dist`.
+5. **Environment:** add `VITE_API_BASE_URL` = your backend URL (e.g. `https://your-api.onrender.com`).  
+   Vite bakes this into the build, so the frontend will call your API at that URL.
+
+Open the frontend URL in the browser for the app UI; the backend URL is for the API only.
+
 ### Dockerization (ready)
 
 The separation of backend and frontend plus environment-based configuration makes it straightforward to add:
