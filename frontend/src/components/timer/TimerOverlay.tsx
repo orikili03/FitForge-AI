@@ -252,43 +252,34 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
             {/* Round counter + revert + pause (AMRAP / FOR_TIME) */}
             {showRoundCounter && (
               <div className="flex flex-col items-center gap-3 w-full max-w-[18rem]">
-                <div className="flex items-stretch gap-3">
+                <p className="text-[10px] uppercase tracking-widest text-ds-text-muted font-medium w-full text-center">
+                  Rounds
+                </p>
+                <div className="flex items-stretch gap-2 w-full">
                   <button
                     onClick={roundCounter.subtractRound}
                     aria-label="Revert round"
                     disabled={roundCounter.rounds === 0}
-                    className="flex items-center justify-center min-w-[5rem] h-[5rem] rounded-ds-xl border border-ds-border bg-ds-surface-subtle hover:bg-ds-surface-hover hover:text-ds-text text-ds-text-muted disabled:opacity-40 disabled:pointer-events-none transition-all duration-250"
+                    className="flex flex-1 items-center justify-center min-h-[4.5rem] rounded-ds-lg bg-ds-surface text-ds-text-muted shadow-ds-sm hover:bg-ds-surface-hover hover:text-ds-text disabled:opacity-35 disabled:pointer-events-none transition-all duration-200"
                   >
-                    <RotateCcw size={22} strokeWidth={2.25} />
+                    <RotateCcw size={20} strokeWidth={2} />
                   </button>
-                  <div
-                    className="flex flex-col items-center justify-center min-w-[5rem] h-[5rem] rounded-ds-xl border-2 border-ds-border bg-ds-surface-subtle"
-                    style={{ borderColor: phaseColor, color: phaseColor }}
-                  >
-                    <p className="text-[10px] uppercase tracking-widest text-ds-text-muted mb-0.5">
-                      Rounds
-                    </p>
-                    <p className="text-3xl font-black text-ds-text tabular-nums leading-none">
+                  <div className="flex flex-1 items-center justify-center min-h-[4.5rem] rounded-ds-lg bg-ds-surface shadow-ds-sm border border-ds-border/80">
+                    <span className="text-2xl font-bold text-ds-text tabular-nums">
                       {roundCounter.rounds}
-                    </p>
+                    </span>
                   </div>
                   <button
                     onClick={roundCounter.addRound}
                     aria-label="Add round"
-                    className="flex items-center justify-center min-w-[5rem] h-[5rem] rounded-ds-xl font-black text-2xl tabular-nums active:scale-[0.98] transition-transform duration-100"
-                    style={{
-                      border: `2px solid ${phaseColor}`,
-                      color: phaseColor,
-                      background: `${phaseColor}18`,
-                      boxShadow: `0 0 20px ${phaseColor}20`,
-                    }}
+                    className="flex flex-1 items-center justify-center min-h-[4.5rem] rounded-ds-lg bg-ds-accent text-stone-950 font-bold text-2xl tabular-nums shadow-ds-sm hover:bg-ds-accent-hover active:scale-[0.98] transition-all duration-200"
                   >
                     +1
                   </button>
                 </div>
                 <button
                   onClick={timer.status === 'running' ? timer.pause : timer.resume}
-                  className="w-full flex items-center justify-center gap-2 rounded-ds-xl border border-ds-border bg-ds-surface py-3 text-sm font-medium text-ds-text hover:bg-ds-surface-hover transition-all duration-250"
+                  className="w-full flex items-center justify-center gap-2 min-h-[2.75rem] rounded-ds-lg bg-ds-surface text-ds-text text-sm font-medium shadow-ds-sm hover:bg-ds-surface-hover transition-all duration-200 border border-ds-border/80"
                 >
                   {timer.status === 'running' ? (
                     <>
