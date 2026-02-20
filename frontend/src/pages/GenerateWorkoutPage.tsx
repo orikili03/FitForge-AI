@@ -163,23 +163,26 @@ export function GenerateWorkoutPage() {
                 <ul className="space-y-2">
                   {currentGear.map((g) => {
                     const checked = includedGearIds.has(g.id);
+                    const hasWeight = g.minWeight !== undefined || g.maxWeight !== undefined;
                     return (
                       <li key={g.id}>
-                        <label className="flex items-center gap-3 rounded-lg border border-ds-border bg-ds-surface-subtle px-3 py-2 cursor-pointer hover:border-ds-border-strong">
+                        <label className="grid cursor-pointer grid-cols-[1fr_auto_auto] items-center gap-3 rounded-lg border border-ds-border bg-ds-surface-subtle px-3 py-2 text-left hover:border-ds-border-strong">
+                          <span className={`min-w-0 font-medium ${checked ? "text-ds-text" : "text-ds-text-muted"}`}>
+                            {g.label}
+                          </span>
+                          {hasWeight ? (
+                            <span className="shrink-0 text-xs text-ds-text-muted">
+                              {g.minWeight ?? "?"}–{g.maxWeight ?? "?"} kg
+                            </span>
+                          ) : (
+                            <span />
+                          )}
                           <input
                             type="checkbox"
                             checked={checked}
                             onChange={() => toggleGear(g.id)}
-                            className="h-4 w-4 rounded border-ds-border text-amber-600 focus:ring-amber-500"
+                            className="h-4 w-4 shrink-0 rounded border-ds-border text-amber-600 focus:ring-amber-500"
                           />
-                          <span className={`flex-1 font-medium ${checked ? "text-ds-text" : "text-ds-text-muted"}`}>
-                            {g.label}
-                          </span>
-                          {(g.minWeight !== undefined || g.maxWeight !== undefined) && (
-                            <span className="text-xs text-ds-text-muted">
-                              {g.minWeight ?? "?"}–{g.maxWeight ?? "?"} kg
-                            </span>
-                          )}
                         </label>
                       </li>
                     );

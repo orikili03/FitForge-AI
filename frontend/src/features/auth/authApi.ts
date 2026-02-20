@@ -17,8 +17,15 @@ interface AuthResponse {
 export function useLogin() {
   return useMutation<AuthResponse, Error, AuthPayload>({
     mutationFn: async (payload) => {
-      const res = await apiClient.post("/auth/login", payload);
-      return res.data.data;
+      try {
+        const res = await apiClient.post("/auth/login", payload);
+        return res.data.data;
+      } catch (err: unknown) {
+        const data = (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data;
+        const msg = data?.error?.message ?? "Unable to sign in. Please try again.";
+        throw new Error(msg);
+      }
     },
   });
 }
@@ -26,8 +33,17 @@ export function useLogin() {
 export function useRegister() {
   return useMutation<AuthResponse, Error, RegisterPayload>({
     mutationFn: async (payload) => {
-      const res = await apiClient.post("/auth/register", payload);
-      return res.data.data;
+      try {
+        const res = await apiClient.post("/auth/register", payload);
+        return res.data.data;
+      } catch (err: unknown) {
+        const data = (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data;
+        const msg =
+          data?.error?.message ??
+          "Unable to create account. Check your connection and try again.";
+        throw new Error(msg);
+      }
     },
   });
 }

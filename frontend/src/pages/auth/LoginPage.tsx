@@ -56,9 +56,21 @@ export function LoginPage() {
             />
           </div>
           {loginMutation.isError && (
-            <p className="text-sm text-red-400">
-              {(loginMutation.error as any).message ?? "Unable to login"}
-            </p>
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2">
+              <p className="text-sm text-red-400">
+                {loginMutation.error?.message ?? "Unable to sign in. Please try again."}
+              </p>
+              {loginMutation.error?.message?.includes("No account") && (
+                <p className="mt-1 text-sm text-ds-text-muted">
+                  <Link
+                    to="/auth/register"
+                    className="font-medium text-amber-400 hover:text-amber-300"
+                  >
+                    Create an account
+                  </Link>
+                </p>
+              )}
+            </div>
           )}
           <button
             type="submit"

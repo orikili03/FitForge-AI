@@ -9,7 +9,9 @@ export class LoginUserUseCase {
   async execute(input: LoginRequestDTO): Promise<AuthResponseDTO> {
     const user = await this.userRepo.findByEmail(input.email);
     if (!user || !user.passwordHash) {
-      const error: any = new Error("Invalid credentials");
+      const error: any = new Error(
+        "No account found with this email. You can create one below."
+      );
       error.statusCode = 401;
       throw error;
     }
@@ -19,12 +21,12 @@ export class LoginUserUseCase {
       match = await bcrypt.compare(input.password, user.passwordHash);
     } catch {
       // e.g. invalid hash format in DB
-      const error: any = new Error("Invalid credentials");
+      const error: any = new Error("Incorrect password. Please try again.");
       error.statusCode = 401;
       throw error;
     }
     if (!match) {
-      const error: any = new Error("Invalid credentials");
+      const error: any = new Error("Incorrect password. Please try again.");
       error.statusCode = 401;
       throw error;
     }
