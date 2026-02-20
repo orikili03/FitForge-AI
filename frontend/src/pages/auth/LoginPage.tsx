@@ -18,7 +18,9 @@ export function LoginPage() {
     loginMutation.mutate(values, {
       onSuccess: (data) => {
         setToken(data.token);
-        navigate("/");
+        // Defer navigation so the auth context update commits before the route change.
+        // Fixes production where batching could make PrivateRoute mount with stale token.
+        setTimeout(() => navigate("/"), 0);
       },
     });
   };

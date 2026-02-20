@@ -50,7 +50,7 @@ export function RegisterPage() {
       {
         onSuccess: (data) => {
           setToken(data.token);
-          navigate("/");
+          setTimeout(() => navigate("/"), 0);
         },
       }
     );
