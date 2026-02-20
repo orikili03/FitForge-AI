@@ -56,10 +56,8 @@ const WorkoutCompletionSchema = new Schema(
   {
     workoutId: { type: String, required: true },
     completedAt: { type: Date, default: Date.now },
-    rpe: { type: Number, required: true },
     completionTime: { type: Number },
     roundsOrReps: { type: Number },
-    notes: { type: String },
   },
   { timestamps: true }
 );

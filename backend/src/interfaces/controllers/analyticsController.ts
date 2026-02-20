@@ -19,7 +19,6 @@ export class AnalyticsController {
 
       const points = completions.map((c) => ({
         date: c.completedAt.toISOString(),
-        rpe: c.rpe,
         roundsOrReps: c.roundsOrReps ?? null,
       }));
 
@@ -27,10 +26,6 @@ export class AnalyticsController {
         success: true,
         data: {
           totalSessions: completions.length,
-          averageRpe:
-            completions.length > 0
-              ? completions.reduce((sum, c) => sum + c.rpe, 0) / completions.length
-              : 0,
           points,
         },
       });

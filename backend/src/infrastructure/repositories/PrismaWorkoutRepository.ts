@@ -35,10 +35,8 @@ export class PrismaWorkoutRepository implements WorkoutRepository {
   }): Promise<void> {
     await WorkoutCompletionModel.create({
       workoutId: params.workoutId,
-      rpe: params.data.rpe,
       completionTime: params.data.completionTime,
       roundsOrReps: params.data.roundsOrReps,
-      notes: params.data.notes,
     });
   }
 

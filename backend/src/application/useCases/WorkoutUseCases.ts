@@ -32,6 +32,7 @@ export class GenerateWorkoutUseCase {
       timeCapMinutes: input.timeCapMinutes,
       recentWorkouts: recentSpecs,
       goal: input.goal,
+      protocol: input.protocol,
     });
 
     const workout = await this.workoutRepo.createGeneratedWorkout({
@@ -74,10 +75,8 @@ export class CompleteWorkoutUseCase {
     await this.workoutRepo.recordCompletion({
       workoutId: input.workoutId,
       data: {
-        rpe: input.rpe,
         completionTime: input.completionTime,
         roundsOrReps: input.roundsOrReps,
-        notes: input.notes,
       },
     });
   }

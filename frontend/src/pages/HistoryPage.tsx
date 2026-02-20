@@ -55,7 +55,7 @@ export function HistoryPage() {
   }, [data, searchQuery, filterType, filterDuration]);
 
   const handleQuickComplete = (workoutId: string) => {
-    completeMutation.mutate({ workoutId, rpe: 8 });
+    completeMutation.mutate({ workoutId });
   };
 
   const wodTypes = useMemo(() => {
@@ -164,7 +164,7 @@ export function HistoryPage() {
                   className="text-xs text-amber-600 hover:text-amber-700 font-medium"
                   disabled={completeMutation.isPending}
                 >
-                  Mark done (RPE 8)
+                  Mark done
                 </button>
               </li>
             ))}

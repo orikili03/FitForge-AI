@@ -1,6 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
   Flame,
   Sparkles,
   History,
@@ -12,8 +11,7 @@ import { useAuthToken } from "../../contexts/AuthTokenContext";
 import { Button } from "../ui/Button";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/wod/today", label: "Today's WOD", icon: Flame, end: false },
+  { to: "/", label: "Today's WOD", icon: Flame, end: true },
   { to: "/wod/generate", label: "Generate", icon: Sparkles, end: false },
   { to: "/equipment", label: "Equipment", icon: Dumbbell, end: false },
   { to: "/history", label: "History", icon: History, end: false },

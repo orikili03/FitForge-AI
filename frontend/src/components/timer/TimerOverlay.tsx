@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Pause, Play, ChevronRight } from 'lucide-react';
+import { X, Pause, Play, RotateCcw } from 'lucide-react';
 import { ProgressRing } from './ProgressRing';
 import { WorkoutSummary } from './WorkoutSummary';
 import { useWorkoutTimer } from '../../features/timer/useWorkoutTimer';
-import { useRepCounter } from '../../features/timer/useRepCounter';
+import { useRoundCounter } from '../../features/timer/useRoundCounter';
 import { useAudioFeedback } from '../../features/timer/useAudioFeedback';
 import {
   parseTimerConfig,
   formatTime,
-  needsRepCounter,
+  needsRoundCounter,
   getPhaseBadge,
   getRoundLabel,
 } from '../../features/timer/timerUtils';
@@ -30,27 +30,28 @@ interface TimerOverlayProps {
 export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
   const config = parseTimerConfig(workout);
   const timer = useWorkoutTimer(config);
-  const repCounter = useRepCounter();
+  const roundCounter = useRoundCounter();
   const audio = useAudioFeedback();
 
   const [stage, setStage] = useState<OverlayStage>('countdown');
   const [countdownNum, setCountdownNum] = useState(3);
   const [sessionResult, setSessionResult] = useState<WorkoutSessionResult | null>(null);
   const [visible, setVisible] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
 
   const hasFinishedRef = useRef(false);
   // Keep mutable refs so callbacks always see fresh values
   const timerRef = useRef(timer);
   timerRef.current = timer;
-  const repCounterRef = useRef(repCounter);
-  repCounterRef.current = repCounter;
+  const roundCounterRef = useRef(roundCounter);
+  roundCounterRef.current = roundCounter;
   const audioRef = useRef(audio);
   audioRef.current = audio;
   // Keep a stable ref to timer.start for the stage-change effect
   const timerStartRef = useRef(timer.start);
   timerStartRef.current = timer.start;
 
-  const showReps = needsRepCounter(config.type);
+  const showRoundCounter = needsRoundCounter(config.type);
 
   // Fade-in the whole overlay after mount
   useEffect(() => {
@@ -104,34 +105,28 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timer.status, stage]);
 
-  // Keyboard: Space → +1 rep (active stage only)
-  useEffect(() => {
-    if (!showReps || stage !== 'active') return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !e.repeat) {
-        e.preventDefault();
-        repCounterRef.current.addRep();
-      }
+  const buildResult = useCallback((): WorkoutSessionResult => {
+    const isUserRounds = config.type === 'AMRAP' || config.type === 'FOR_TIME';
+    return {
+      totalElapsed: timerRef.current.elapsed,
+      roundsCompleted: isUserRounds ? roundCounterRef.current.rounds : config.totalRounds,
+      config,
+      workoutId: workout.id,
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [showReps, stage]);
-
-  const buildResult = useCallback((): WorkoutSessionResult => ({
-    totalElapsed: timerRef.current.elapsed,
-    repsByRound: [...repCounterRef.current.repsByRound],
-    totalReps: repCounterRef.current.totalReps,
-    config,
-    workoutId: workout.id,
-  }), [config, workout.id]);
+  }, [config, workout.id]);
 
   const handleEndWorkout = useCallback(() => {
     if (hasFinishedRef.current) return;
     hasFinishedRef.current = true;
+    setShowEndConfirm(false);
     timerRef.current.stop();
     setSessionResult(buildResult());
     setStage('summary');
   }, [buildResult]);
+
+  const onEndWorkoutClick = useCallback(() => {
+    setShowEndConfirm(true);
+  }, []);
 
   // --- Derived display values ---
   const phaseColor = timer.computed.phase === 'WORK' ? WORK_COLOR : REST_COLOR;
@@ -204,7 +199,7 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
               <p className="text-xs text-ds-text-muted">{workout.wod.duration} min</p>
             </div>
             <button
-              onClick={handleEndWorkout}
+              onClick={onEndWorkoutClick}
               className="flex items-center gap-1.5 rounded-ds-md border border-ds-border bg-ds-surface px-3 py-2 text-xs font-medium text-ds-text-muted hover:border-ds-border-strong hover:text-ds-text transition-all duration-250"
             >
               <X size={12} />
@@ -254,93 +249,124 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
               </div>
             </div>
 
-            {/* Rep counter (AMRAP / FOR_TIME) */}
-            {showReps && (
-              <div className="flex flex-col items-center gap-4">
-                {/* Stats row */}
-                <div className="flex items-center gap-6">
-                  <div className="text-center">
-                    <p className="text-[10px] uppercase tracking-widest text-ds-text-muted mb-0.5">Round</p>
-                    <p className="text-3xl font-black text-ds-text tabular-nums leading-none">
-                      {repCounter.currentRound}
-                    </p>
-                  </div>
-                  <div className="h-10 w-px bg-ds-border" />
-                  <div className="text-center">
-                    <p className="text-[10px] uppercase tracking-widest text-ds-text-muted mb-0.5">Reps</p>
-                    <p className="text-3xl font-black text-ds-text tabular-nums leading-none">
-                      {repCounter.totalReps}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex items-center gap-3">
-                  {/* Large rep tap button */}
+            {/* Round counter + revert + pause (AMRAP / FOR_TIME) */}
+            {showRoundCounter && (
+              <div className="flex flex-col items-center gap-3 w-full max-w-[18rem]">
+                <div className="flex items-stretch gap-3">
                   <button
-                    onClick={repCounter.addRep}
-                    aria-label="Add rep"
-                    className="flex flex-col items-center justify-center w-[5.5rem] h-[5.5rem] rounded-full font-black active:scale-90 transition-all duration-100"
+                    onClick={roundCounter.subtractRound}
+                    aria-label="Revert round"
+                    disabled={roundCounter.rounds === 0}
+                    className="flex items-center justify-center min-w-[5rem] h-[5rem] rounded-ds-xl border border-ds-border bg-ds-surface-subtle hover:bg-ds-surface-hover hover:text-ds-text text-ds-text-muted disabled:opacity-40 disabled:pointer-events-none transition-all duration-250"
+                  >
+                    <RotateCcw size={22} strokeWidth={2.25} />
+                  </button>
+                  <div
+                    className="flex flex-col items-center justify-center min-w-[5rem] h-[5rem] rounded-ds-xl border-2 border-ds-border bg-ds-surface-subtle"
+                    style={{ borderColor: phaseColor, color: phaseColor }}
+                  >
+                    <p className="text-[10px] uppercase tracking-widest text-ds-text-muted mb-0.5">
+                      Rounds
+                    </p>
+                    <p className="text-3xl font-black text-ds-text tabular-nums leading-none">
+                      {roundCounter.rounds}
+                    </p>
+                  </div>
+                  <button
+                    onClick={roundCounter.addRound}
+                    aria-label="Add round"
+                    className="flex items-center justify-center min-w-[5rem] h-[5rem] rounded-ds-xl font-black text-2xl tabular-nums active:scale-[0.98] transition-transform duration-100"
                     style={{
                       border: `2px solid ${phaseColor}`,
                       color: phaseColor,
-                      boxShadow: `0 0 24px ${phaseColor}28`,
+                      background: `${phaseColor}18`,
+                      boxShadow: `0 0 20px ${phaseColor}20`,
                     }}
                   >
-                    <span style={{ fontSize: '1.75rem', lineHeight: 1 }}>+1</span>
-                    <span className="text-[9px] font-normal text-ds-text-muted mt-0.5 tracking-widest uppercase">
-                      Rep
-                    </span>
+                    +1
                   </button>
-
-                  <div className="flex flex-col gap-2">
-                    {/* Next round (AMRAP only) */}
-                    {config.type === 'AMRAP' && (
-                      <button
-                        onClick={repCounter.nextRound}
-                        className="flex items-center gap-1.5 rounded-ds-xl border border-ds-border bg-ds-surface px-3.5 py-2 text-xs font-medium text-ds-text-secondary hover:bg-ds-surface-hover hover:text-ds-text transition-all duration-250"
-                      >
-                        Next Round
-                        <ChevronRight size={13} />
-                      </button>
-                    )}
-                    {/* Undo last rep */}
-                    <button
-                      onClick={repCounter.removeRep}
-                      className="flex items-center gap-1.5 rounded-ds-xl border border-ds-border bg-ds-surface px-3.5 py-2 text-xs font-medium text-ds-text-muted hover:bg-ds-surface-hover hover:text-ds-text transition-all duration-250"
-                    >
-                      Undo rep
-                    </button>
-                  </div>
                 </div>
-
-                <p className="text-[10px] text-ds-text-faint">
-                  Space&thinsp;=&thinsp;+1 rep
-                </p>
+                <button
+                  onClick={timer.status === 'running' ? timer.pause : timer.resume}
+                  className="w-full flex items-center justify-center gap-2 rounded-ds-xl border border-ds-border bg-ds-surface py-3 text-sm font-medium text-ds-text hover:bg-ds-surface-hover transition-all duration-250"
+                >
+                  {timer.status === 'running' ? (
+                    <>
+                      <Pause size={14} />
+                      Pause
+                    </>
+                  ) : (
+                    <>
+                      <Play size={14} />
+                      Resume
+                    </>
+                  )}
+                </button>
               </div>
             )}
           </div>
 
-          {/* Bottom controls */}
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center pb-8">
-            {timer.status === 'running' ? (
-              <button
-                onClick={timer.pause}
-                className="flex items-center gap-2 rounded-ds-xl border border-ds-border bg-ds-surface px-7 py-3 text-sm font-medium text-ds-text hover:bg-ds-surface-hover transition-all duration-250"
+          {/* Bottom controls (EMOM / Tabata — no round counter) */}
+          {!showRoundCounter && (
+            <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center pb-8">
+              {timer.status === 'running' ? (
+                <button
+                  onClick={timer.pause}
+                  className="flex items-center gap-2 rounded-ds-xl border border-ds-border bg-ds-surface px-7 py-3 text-sm font-medium text-ds-text hover:bg-ds-surface-hover transition-all duration-250"
+                >
+                  <Pause size={14} />
+                  Pause
+                </button>
+              ) : (
+                <button
+                  onClick={timer.resume}
+                  className="flex items-center gap-2 rounded-ds-xl border border-ds-border bg-ds-surface px-7 py-3 text-sm font-medium text-ds-text hover:bg-ds-surface-hover transition-all duration-250"
+                >
+                  <Play size={14} />
+                  Resume
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* End workout confirmation */}
+          {showEndConfirm && (
+            <div
+              className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowEndConfirm(false)}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="end-workout-title"
+            >
+              <div
+                className="mx-4 w-full max-w-xs rounded-ds-xl border border-ds-border bg-ds-surface p-5 shadow-ds-lg"
+                onClick={(e) => e.stopPropagation()}
               >
-                <Pause size={14} />
-                Pause
-              </button>
-            ) : (
-              <button
-                onClick={timer.resume}
-                className="flex items-center gap-2 rounded-ds-xl border border-ds-border bg-ds-surface px-7 py-3 text-sm font-medium text-ds-text hover:bg-ds-surface-hover transition-all duration-250"
-              >
-                <Play size={14} />
-                Resume
-              </button>
-            )}
-          </div>
+                <h3 id="end-workout-title" className="text-lg font-semibold text-ds-text mb-1">
+                  End workout?
+                </h3>
+                <p className="text-sm text-ds-text-muted mb-5">
+                  Your progress will be saved on the summary screen. You can save or discard from there.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowEndConfirm(false)}
+                    className="flex-1 rounded-ds-xl border border-ds-border bg-ds-surface-subtle py-2.5 text-sm font-medium text-ds-text hover:bg-ds-surface-hover transition-all duration-250"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleEndWorkout}
+                    className="flex-1 rounded-ds-xl bg-amber-500/90 py-2.5 text-sm font-semibold text-stone-950 hover:bg-amber-500 transition-all duration-250"
+                  >
+                    End workout
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 

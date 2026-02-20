@@ -14,6 +14,7 @@ export interface WorkoutEngineInput {
   recentWorkouts: WorkoutSpec[];
   fatigueScore?: number;
   goal: "strength" | "endurance" | "mixed" | "skill";
+  protocol: "recommended" | "EMOM" | "AMRAP" | "FOR_TIME" | "TABATA" | "DEATH_BY" | "21_15_9";
 }
 
 export class WorkoutEngine {
@@ -46,6 +47,7 @@ export class WorkoutEngine {
       constraints,
       progression,
       primaryGoal: input.goal,
+      protocol: input.protocol,
     });
 
     return spec;

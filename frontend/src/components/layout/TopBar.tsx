@@ -3,7 +3,6 @@ import { NavLink, useNavigate } from "react-router-dom";
 import {
   Menu,
   X,
-  LayoutDashboard,
   Flame,
   Sparkles,
   History,
@@ -14,8 +13,7 @@ import {
 import { useAuthToken } from "../../contexts/AuthTokenContext";
 
 const navItems = [
-  { to: "/", label: "Dashboard", end: true },
-  { to: "/wod/today", label: "Today's WOD", end: false },
+  { to: "/", label: "Today's WOD", end: true },
   { to: "/wod/generate", label: "Generate", end: false },
   { to: "/equipment", label: "Equipment", end: false },
   { to: "/history", label: "History", end: false },
@@ -23,8 +21,7 @@ const navItems = [
 ];
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  "/": LayoutDashboard,
-  "/wod/today": Flame,
+  "/": Flame,
   "/wod/generate": Sparkles,
   "/history": History,
   "/equipment": Dumbbell,

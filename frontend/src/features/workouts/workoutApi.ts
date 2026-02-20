@@ -23,14 +23,16 @@ export interface WorkoutResponse extends WorkoutSpec {
 
 export interface CompleteWorkoutPayload {
   workoutId: string;
-  rpe: number;
   completionTime?: number;
   roundsOrReps?: number;
-  notes?: string;
 }
 
 export function useGenerateWorkout() {
-  return useMutation<WorkoutResponse, Error, { timeCapMinutes: number; equipment: string[]; goal: "strength" | "endurance" | "mixed" | "skill" }>({
+  return useMutation<
+    WorkoutResponse,
+    Error,
+    { timeCapMinutes: number; equipment: string[]; goal: "strength" | "endurance" | "mixed" | "skill"; protocol: string }
+  >({
     mutationFn: async (payload) => {
       const res = await apiClient.post("/workouts/generate", payload);
       return res.data.data;

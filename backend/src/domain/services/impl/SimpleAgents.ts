@@ -85,12 +85,15 @@ export class SimpleProgrammingAgent implements ProgrammingAgent {
       .filter((m) => constraints.allowedMovements.includes(m))
       .slice(0, 3);
 
-    const type = this.pickWodType(primaryGoal, progression.targetDuration);
+    const type =
+      input.protocol !== "recommended"
+        ? this.protocolToDisplayType(input.protocol)
+        : this.pickWodType(primaryGoal, progression.targetDuration);
 
     const intensityGuidance =
       assessment.fatigueScore > 0.7
-        ? "Reduce loading and keep RPE around 6-7/10."
-        : "Aim for RPE 8-9/10, but keep mechanics sound.";
+        ? "Reduce loading and keep intensity moderate."
+        : "Aim for high intensity, but keep mechanics sound.";
 
     return {
       warmup: ["5 min easy cardio", "2 rounds: 10 air squats, 10 ring rows, 10 PVC pass-throughs"],
@@ -125,6 +128,24 @@ export class SimpleProgrammingAgent implements ProgrammingAgent {
           ...MOVEMENT_CATEGORIES.gymnastics,
           ...MOVEMENT_CATEGORIES.monostructural,
         ];
+    }
+  }
+
+  private protocolToDisplayType(
+    protocol: ProgrammingInput["protocol"]
+  ): string {
+    switch (protocol) {
+      case "FOR_TIME":
+        return "For Time";
+      case "21_15_9":
+        return "21-15-9";
+      case "DEATH_BY":
+        return "Death By";
+      case "EMOM":
+      case "AMRAP":
+      case "TABATA":
+      default:
+        return protocol;
     }
   }
 

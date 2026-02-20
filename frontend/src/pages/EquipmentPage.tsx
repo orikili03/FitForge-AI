@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { Pencil, Save, Sparkles, X } from "lucide-react";
+import { Sparkles, Trash2 } from "lucide-react";
 
 import { useEquipmentState, useUpdateEquipment } from "../features/equipment/equipmentApi";
 import { BUILTIN_PRESETS, EQUIPMENT_CATALOG, EquipmentCategory } from "../features/equipment/equipmentCatalog";
@@ -106,45 +103,14 @@ function EquipmentCard({
   );
 }
 
-function SortableSelectedRow({ item, label }: { item: EquipmentSelection; label: string }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center justify-between gap-3 rounded-lg border border-ds-border bg-ds-surface-subtle px-3 py-2"
-    >
-      <div className="text-sm">
-        <div className="font-medium">{label}</div>
-        {(item.minWeight !== undefined || item.maxWeight !== undefined) && (
-          <div className="text-xs text-ds-text-muted">
-            {item.minWeight ?? "?"}–{item.maxWeight ?? "?"} kg
-          </div>
-        )}
-      </div>
-      <button
-        type="button"
-        className="text-xs text-ds-text-muted hover:text-ds-text"
-        {...attributes}
-        {...listeners}
-      >
-        Drag
-      </button>
-    </div>
-  );
-}
-
 export function EquipmentPage() {
   const { data, isLoading } = useEquipmentState();
   const updateMutation = useUpdateEquipment();
 
   const [local, setLocal] = useState<EquipmentState>({ selected: [], customPresets: [] });
-  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+  const [activeCustomPresetId, setActiveCustomPresetId] = useState<string | null>(null);
+  const [showCreatePreset, setShowCreatePreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState("");
   const initialSyncDone = useRef(false);
 
   useEffect(() => {
@@ -177,48 +143,66 @@ export function EquipmentPage() {
     return () => clearTimeout(timer);
   }, [local, hasAnyWeightError, data]);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-
   const selectedIds = useMemo(() => new Set(local.selected.map((s) => s.id)), [local.selected]);
 
   const toggle = (id: string) => {
     setLocal((prev) => {
       const exists = prev.selected.find((s) => s.id === id);
-      if (exists) {
-        return { ...prev, selected: prev.selected.filter((s) => s.id !== id) };
-      }
-      return { ...prev, selected: [...prev.selected, { id }] };
+      const nextSelected = exists
+        ? prev.selected.filter((s) => s.id !== id)
+        : [...prev.selected, { id }];
+      const nextPresets = activeCustomPresetId
+        ? prev.customPresets.map((p) =>
+            p.id === activeCustomPresetId ? { ...p, selected: nextSelected } : p
+          )
+        : prev.customPresets;
+      return { ...prev, selected: nextSelected, customPresets: nextPresets };
     });
   };
 
   const changeWeights = (id: string, next: { minWeight?: number; maxWeight?: number }) => {
-    setLocal((prev) => ({
-      ...prev,
-      selected: prev.selected.map((s) => (s.id === id ? { ...s, ...next } : s)),
-    }));
+    setLocal((prev) => {
+      const nextSelected = prev.selected.map((s) => (s.id === id ? { ...s, ...next } : s));
+      const nextPresets = activeCustomPresetId
+        ? prev.customPresets.map((p) =>
+            p.id === activeCustomPresetId ? { ...p, selected: nextSelected } : p
+          )
+        : prev.customPresets;
+      return { ...prev, selected: nextSelected, customPresets: nextPresets };
+    });
   };
 
-  const applyPreset = (selected: EquipmentSelection[], isCustomPresetId?: string) => {
+  const applyPreset = (selected: EquipmentSelection[], customPresetId?: string) => {
+    setShowCreatePreset(false);
+    setNewPresetName("");
     setLocal((prev) => ({ ...prev, selected }));
-    if (isCustomPresetId) setEditingPresetId(isCustomPresetId);
-    else setEditingPresetId(null);
-  };
-
-  const updateEditingPreset = () => {
-    if (!editingPresetId) return;
-    setLocal((prev) => ({
-      ...prev,
-      customPresets: prev.customPresets.map((p) =>
-        p.id === editingPresetId ? { ...p, selected: local.selected } : p
-      ),
-    }));
-    setEditingPresetId(null);
+    setActiveCustomPresetId(customPresetId ?? null);
   };
 
   const removeCustomPreset = (id: string) => {
     setLocal((prev) => ({ ...prev, customPresets: prev.customPresets.filter((p) => p.id !== id) }));
-    if (editingPresetId === id) setEditingPresetId(null);
+    if (activeCustomPresetId === id) setActiveCustomPresetId(null);
   };
+
+  const createNewPreset = () => {
+    const name = newPresetName.trim();
+    if (!name) return;
+    const id = `preset_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    const preset: CustomPreset = { id, name, selected: [] };
+    setLocal((prev) => ({ ...prev, customPresets: [...prev.customPresets, preset], selected: [] }));
+    setActiveCustomPresetId(id);
+    setNewPresetName("");
+    setShowCreatePreset(false);
+  };
+
+  const selectionKey = (selected: EquipmentSelection[]) =>
+    selected
+      .map((s) => `${s.id}:${s.minWeight ?? ""}:${s.maxWeight ?? ""}`)
+      .sort()
+      .join(",");
+  const currentKey = selectionKey(local.selected);
+  const isPresetActive = (presetSelected: EquipmentSelection[]) =>
+    selectionKey(presetSelected) === currentKey;
 
   return (
     <div className="space-y-6">
@@ -232,7 +216,7 @@ export function EquipmentPage() {
         )}
       </div>
 
-      <div className={local.selected.length > 0 ? "grid grid-cols-1 lg:grid-cols-[1.4fr,0.6fr] gap-6" : ""}>
+      <div className={!showCreatePreset && (local.selected.length > 0 || activeCustomPresetId) ? "grid grid-cols-1 lg:grid-cols-[1.4fr,0.6fr] gap-6" : ""}>
         <div className="space-y-6">
           <div className="card">
             <div className="flex items-center justify-between gap-3">
@@ -244,82 +228,137 @@ export function EquipmentPage() {
             </div>
 
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {BUILTIN_PRESETS.filter((p) => p.id !== "none").map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => applyPreset(p.selected)}
-                  className="rounded-xl border border-ds-border bg-ds-surface-subtle px-4 py-3 text-left hover:border-ds-border-strong transition-colors active:scale-[0.99]"
-                >
-                  <div className="text-sm font-medium">{p.name}</div>
-                  <div className="text-xs text-ds-text-muted">{p.description}</div>
-                </button>
-              ))}
-            </div>
-
-            {editingPresetId && (() => {
-              const preset = local.customPresets.find((p) => p.id === editingPresetId);
-              return preset ? (
-                <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-                  <span className="text-sm text-ds-text">Editing: {preset.name}</span>
-                  <button
-                    type="button"
-                    onClick={updateEditingPreset}
-                    className="btn-primary inline-flex gap-2 text-sm"
+              {BUILTIN_PRESETS.filter((p) => p.id !== "none" && p.id !== "custom").map((p) => {
+                const active = isPresetActive(p.selected) && activeCustomPresetId === null;
+                return (
+                  <div
+                    key={p.id}
+                    className={[
+                      "flex items-start gap-2 rounded-xl border px-4 py-3 transition-colors",
+                      active
+                        ? "border-amber-500/60 bg-ds-surface shadow-[0_0_0_1px_rgba(245,158,11,0.25)]"
+                        : "border-ds-border bg-ds-surface-subtle hover:border-ds-border-strong",
+                    ].join(" ")}
                   >
-                    <Save className="h-3.5 w-3.5" />
-                    Update preset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingPresetId(null)}
-                    className="text-ds-body-sm text-ds-text-muted hover:text-ds-text"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : null;
-            })()}
-
-            {local.customPresets.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <div className="text-xs text-ds-text-muted">Your saved presets — Apply to load, Edit to change and Update.</div>
-                {local.customPresets.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between gap-2 rounded-lg border border-ds-border bg-ds-surface-subtle px-3 py-2">
                     <button
                       type="button"
                       onClick={() => applyPreset(p.selected)}
-                      className="text-left flex-1 min-w-0"
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="text-sm font-medium">{p.name}</div>
+                      <div className="text-xs text-ds-text-muted">{p.description}</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.alert("This preset cannot be removed.");
+                      }}
+                      className="shrink-0 p-1.5 rounded text-ds-text-muted hover:text-red-500 transition-colors"
+                      title="Remove preset"
+                      aria-label="Remove preset"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                );
+              })}
+              {local.customPresets.map((p) => {
+                const active = isPresetActive(p.selected) && activeCustomPresetId === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    className={[
+                      "flex items-start gap-2 rounded-xl border px-4 py-3 transition-colors",
+                      active
+                        ? "border-amber-500/60 bg-ds-surface shadow-[0_0_0_1px_rgba(245,158,11,0.25)]"
+                        : "border-ds-border bg-ds-surface-subtle hover:border-ds-border-strong",
+                    ].join(" ")}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => applyPreset(p.selected, p.id)}
+                      className="flex-1 min-w-0 text-left"
                     >
                       <div className="text-sm font-medium">{p.name}</div>
                       <div className="text-xs text-ds-text-muted">{p.selected.length} items</div>
                     </button>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => applyPreset(p.selected, p.id)}
-                        className="p-1.5 text-ds-text-muted hover:text-ds-text hover:bg-ds-surface rounded"
-                        title="Edit this preset"
-                        aria-label="Edit preset"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeCustomPreset(p.id)}
-                        className="p-1.5 text-ds-text-muted hover:text-red-500 rounded"
-                        aria-label="Delete preset"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Are you sure you want to remove the preset "${p.name}"?`)) {
+                          removeCustomPreset(p.id);
+                        }
+                      }}
+                      className="shrink-0 p-1.5 rounded text-ds-text-muted hover:text-red-500 transition-colors"
+                      title="Remove preset"
+                      aria-label="Remove preset"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                ))}
+                );
+              })}
+              {(() => {
+                const customBuiltin = BUILTIN_PRESETS.find((p) => p.id === "custom");
+                if (!customBuiltin) return null;
+                const active = isPresetActive(customBuiltin.selected) && activeCustomPresetId === null;
+                return (
+                  <div
+                    key="custom"
+                    className={[
+                      "flex items-start gap-2 rounded-xl border px-4 py-3 transition-colors",
+                      active
+                        ? "border-amber-500/60 bg-ds-surface shadow-[0_0_0_1px_rgba(245,158,11,0.25)]"
+                        : "border-ds-border bg-ds-surface-subtle hover:border-ds-border-strong",
+                    ].join(" ")}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setShowCreatePreset(true)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <div className="text-sm font-medium">{customBuiltin.name}</div>
+                      <div className="text-xs text-ds-text-muted">{customBuiltin.description}</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.alert("This preset cannot be removed.");
+                      }}
+                      className="shrink-0 p-1.5 rounded text-ds-text-muted hover:text-red-500 transition-colors"
+                      title="Remove preset"
+                      aria-label="Remove preset"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {showCreatePreset && (
+              <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+                <input
+                  type="text"
+                  placeholder="Preset name"
+                  maxLength={60}
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), createNewPreset())}
+                  className="flex-1 min-w-[140px] rounded-lg border border-ds-border bg-ds-surface-subtle px-3 py-2 text-sm text-ds-text placeholder:text-ds-text-muted focus:border-ds-border-strong focus:outline-none"
+                />
+                <button type="button" onClick={createNewPreset} className="btn-primary text-sm" disabled={!newPresetName.trim()}>
+                  Create preset
+                </button>
               </div>
             )}
+
           </div>
 
-          {local.selected.length > 0 && (
+          {!showCreatePreset && (local.selected.length > 0 || activeCustomPresetId) && (
             <>
               {(["Gymnastics", "Strength", "Conditioning", "Optional"] as EquipmentCategory[]).map((cat) => (
                 <div key={cat} className="space-y-3">
@@ -357,57 +396,6 @@ export function EquipmentPage() {
           )}
         </div>
 
-        {local.selected.length > 0 && (
-        <div className="card">
-          <div className="text-sm font-semibold">Priority order</div>
-          <div className="text-xs text-ds-text-muted">Drag to reorder your selected equipment (top = most preferred).</div>
-
-          <div className="mt-4">
-            {isLoading && <div className="text-sm text-ds-text-muted">Loading...</div>}
-            {!isLoading && (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={(event) => {
-                  const { active, over } = event;
-                  if (!over || active.id === over.id) return;
-                  setLocal((prev) => {
-                    const oldIndex = prev.selected.findIndex((s) => s.id === active.id);
-                    const newIndex = prev.selected.findIndex((s) => s.id === over.id);
-                    return { ...prev, selected: arrayMove(prev.selected, oldIndex, newIndex) };
-                  });
-                }}
-              >
-                <SortableContext items={local.selected.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-2">
-                    {local.selected.map((s) => {
-                      const label = EQUIPMENT_CATALOG.find((c) => c.id === s.id)?.label ?? s.id;
-                      return <SortableSelectedRow key={s.id} item={s} label={label} />;
-                    })}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
-
-            {hasAnyWeightError && (
-              <div className="mt-3 text-[11px] text-red-500">
-                Fix weight range errors (Min must be ≤ Max) before saving.
-              </div>
-            )}
-
-            {updateMutation.isSuccess && (
-              <div className="mt-3 text-[11px] text-emerald-400">Saved.</div>
-            )}
-            {updateMutation.isError && (
-              <div className="mt-3 text-[11px] text-red-500">
-                {(updateMutation.error as any)?.response?.data?.error?.message ??
-                  (updateMutation.error as any).message ??
-                  "Unable to save equipment"}
-              </div>
-            )}
-          </div>
-        </div>
-        )}
       </div>
     </div>
   );

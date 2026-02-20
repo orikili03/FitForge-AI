@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Clock, Repeat2, Layers, ChevronRight } from 'lucide-react';
+import { CheckCircle, Clock, Layers, ChevronRight } from 'lucide-react';
 import { useCompleteWorkout } from '../../features/workouts/workoutApi';
-import { formatTime, needsRepCounter } from '../../features/timer/timerUtils';
+import { formatTime } from '../../features/timer/timerUtils';
 import type { WorkoutSessionResult } from '../../features/timer/timerTypes';
 import type { WorkoutResponse } from '../../features/workouts/workoutApi';
 import { Button } from '../ui/Button';
@@ -17,20 +17,13 @@ export function WorkoutSummary({ workout, result, onClose }: WorkoutSummaryProps
   const [rpe, setRpe] = useState(8);
   const completeMutation = useCompleteWorkout();
   const queryClient = useQueryClient();
-  const showReps = needsRepCounter(result.config.type);
-  // Total rounds completed: for AMRAP/For Time = rounds user advanced; for EMOM/Tabata = preset total
-  const totalRoundsCompleted =
-    result.config.type === 'AMRAP' || result.config.type === 'FOR_TIME'
-      ? result.repsByRound.length
-      : result.config.totalRounds;
 
   const handleSave = () => {
     completeMutation.mutate(
       {
         workoutId: workout.id,
-        rpe,
         completionTime: Math.round(result.totalElapsed),
-        roundsOrReps: result.totalReps || undefined,
+        roundsOrReps: result.roundsCompleted,
       },
       {
         onSuccess: () => {
@@ -57,8 +50,8 @@ export function WorkoutSummary({ workout, result, onClose }: WorkoutSummaryProps
         </p>
       </div>
 
-      {/* Stats: total time, rounds completed, and (for AMRAP/For Time) total reps */}
-      <div className={`w-full grid gap-3 ${showReps ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      {/* Stats: total time and rounds completed */}
+      <div className="w-full grid grid-cols-2 gap-3">
         <StatBox
           icon={<Clock size={15} className="text-ds-text-muted" />}
           value={formatTime(Math.round(result.totalElapsed))}
@@ -66,37 +59,10 @@ export function WorkoutSummary({ workout, result, onClose }: WorkoutSummaryProps
         />
         <StatBox
           icon={<Layers size={15} className="text-ds-text-muted" />}
-          value={String(totalRoundsCompleted)}
+          value={String(result.roundsCompleted)}
           label="Rounds"
         />
-        {showReps && (
-          <StatBox
-            icon={<Repeat2 size={15} className="text-ds-text-muted" />}
-            value={String(result.totalReps)}
-            label="Total reps"
-          />
-        )}
       </div>
-
-      {/* Per-round rep breakdown (AMRAP / FOR_TIME) */}
-      {showReps && result.repsByRound.length > 1 && (
-        <div className="w-full card">
-          <h3 className="text-xs uppercase tracking-widest text-ds-text-muted mb-3">
-            Reps per round
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {result.repsByRound.map((reps, i) => (
-              <div
-                key={i}
-                className="flex flex-col items-center rounded-ds-md bg-ds-surface-subtle px-3 py-2 min-w-[3rem]"
-              >
-                <span className="text-[10px] text-ds-text-muted">Rnd {i + 1}</span>
-                <span className="text-lg font-bold text-ds-text tabular-nums">{reps}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* RPE slider */}
       <div className="w-full card">

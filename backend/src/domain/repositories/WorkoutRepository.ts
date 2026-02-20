@@ -1,10 +1,8 @@
 import { Workout, WorkoutSpec } from "../entities/Workout";
 
 export interface WorkoutCompletionData {
-  rpe: number;
   completionTime?: number;
   roundsOrReps?: number;
-  notes?: string;
 }
 
 export interface WorkoutRepository {

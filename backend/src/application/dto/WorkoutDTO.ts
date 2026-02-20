@@ -4,6 +4,7 @@ export interface GenerateWorkoutRequestDTO {
   timeCapMinutes: number;
   equipment: string[];
   goal: "strength" | "endurance" | "mixed" | "skill";
+  protocol: "recommended" | "EMOM" | "AMRAP" | "FOR_TIME" | "TABATA" | "DEATH_BY" | "21_15_9";
 }
 
 export interface WorkoutResponseDTO extends WorkoutSpec {
@@ -17,9 +18,7 @@ export interface WorkoutHistoryItemDTO extends WorkoutResponseDTO {}
 
 export interface CompleteWorkoutRequestDTO {
   workoutId: string;
-  rpe: number;
   completionTime?: number;
   roundsOrReps?: number;
-  notes?: string;
 }
 

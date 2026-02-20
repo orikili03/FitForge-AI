@@ -117,8 +117,8 @@ export function formatTime(totalSeconds: number): string {
   return `${m.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-/** Whether this timer type uses a manual rep counter */
-export function needsRepCounter(type: TimerConfig['type']): boolean {
+/** Whether this timer type uses a manual round counter (AMRAP / For Time) */
+export function needsRoundCounter(type: TimerConfig['type']): boolean {
   return type === 'AMRAP' || type === 'FOR_TIME';
 }
 

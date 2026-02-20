@@ -26,8 +26,8 @@ export interface ComputedTimerState {
 
 export interface WorkoutSessionResult {
   totalElapsed: number;
-  repsByRound: number[];
-  totalReps: number;
+  /** Rounds completed (user-tracked for AMRAP/For Time; protocol total for EMOM/Tabata) */
+  roundsCompleted: number;
   config: TimerConfig;
   workoutId: string;
 }

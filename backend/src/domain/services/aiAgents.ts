@@ -37,6 +37,7 @@ export interface ProgrammingInput {
   constraints: ConstraintOutput;
   progression: ProgressionOutput;
   primaryGoal: "strength" | "endurance" | "mixed" | "skill";
+  protocol: "recommended" | "EMOM" | "AMRAP" | "FOR_TIME" | "TABATA" | "DEATH_BY" | "21_15_9";
 }
 
 export interface AssessmentAgent {

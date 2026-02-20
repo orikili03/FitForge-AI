@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "./AppLayout";
 import { LoginPage } from "../pages/auth/LoginPage";
 import { RegisterPage } from "../pages/auth/RegisterPage";
-import { DashboardPage } from "../pages/DashboardPage";
 import { GenerateWorkoutPage } from "../pages/GenerateWorkoutPage";
 import { HistoryPage } from "../pages/HistoryPage";
 import { ProfilePage } from "../pages/ProfilePage";
@@ -34,7 +33,7 @@ export default function App() {
           </PrivateRoute>
         }
       >
-        <Route index element={<DashboardPage />} />
+        <Route index element={<TodayWodPage />} />
         <Route path="wod/today" element={<TodayWodPage />} />
         <Route path="wod/generate" element={<GenerateWorkoutPage />} />
         <Route path="wod/builder" element={<WorkoutBuilderPage />} />
