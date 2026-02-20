@@ -24,7 +24,7 @@ export function RegisterPage() {
     register,
     handleSubmit,
     watch,
-    formState: { isValid, errors },
+    formState: { isValid },
   } = useForm<RegisterFormValues>({
     defaultValues: {
       fitnessLevel: "beginner",
@@ -68,16 +68,20 @@ export function RegisterPage() {
           </p>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {registerMutation.isError && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2">
+              <p className="text-sm text-red-400">
+                {registerMutation.error?.message ?? "Unable to create account. Please try again."}
+              </p>
+            </div>
+          )}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-ds-text">Email</label>
             <input
               type="email"
               className="w-full rounded-xl border border-ds-border bg-ds-surface-subtle px-4 py-3 text-sm text-ds-text placeholder:text-ds-text-muted transition-colors duration-250 focus:border-ds-border-strong focus:outline-none focus:ring-1 focus:ring-ds-border-strong"
-              {...register("email", { required: "Email is required" })}
+              {...register("email", { required: true })}
             />
-            {errors.email && (
-              <p className="text-sm text-red-400">{errors.email.message}</p>
-            )}
           </div>
           <div className="space-y-2">
             <label className="block text-sm font-medium text-ds-text">Password</label>
@@ -140,13 +144,6 @@ export function RegisterPage() {
               <option value="advanced">Advanced</option>
             </select>
           </div>
-            {registerMutation.isError && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2">
-              <p className="text-sm text-red-400">
-                {registerMutation.error?.message ?? "Unable to create account. Please try again."}
-              </p>
-            </div>
-          )}
           <button
             type="submit"
             className="btn-primary w-full"
@@ -154,11 +151,6 @@ export function RegisterPage() {
           >
             {registerMutation.isPending ? "Creating…" : "Create account"}
           </button>
-          {!registerMutation.isPending && (!isValid || !passwordOk) && (
-            <p className="text-center text-xs text-ds-text-muted">
-              Complete all fields and meet the password rules above to continue.
-            </p>
-          )}
         </form>
         <p className="mt-6 text-sm text-ds-text-muted">
           Already have an account?{" "}
