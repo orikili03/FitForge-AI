@@ -1,4 +1,9 @@
 {
+  "private": true,
+  "scripts": {
+    "build": "npm run build --prefix backend",
+    "start": "npm start --prefix backend"
+  },
   "dependencies": {
     "fitforge-ai-backend": "file:backend",
     "fitforge-ai-frontend": "file:frontend"
