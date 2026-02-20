@@ -38,6 +38,7 @@ export function RegisterPage() {
   const password = watch("password") ?? "";
   const checks = useMemo(() => passwordRules(password), [password]);
   const passwordOk = checks.minLength && checks.hasLetter && checks.hasNumber;
+  const passwordStarted = password.length > 0;
 
   const onSubmit = (values: RegisterFormValues) => {
     registerMutation.mutate(
@@ -90,13 +91,37 @@ export function RegisterPage() {
               })}
             />
             <div className="mt-2 space-y-1 text-xs">
-              <div className={checks.minLength ? "text-emerald-400" : "text-red-400"}>
+              <div
+                className={
+                  checks.minLength
+                    ? "text-emerald-400"
+                    : passwordStarted
+                      ? "text-red-400"
+                      : "text-ds-text-muted"
+                }
+              >
                 {checks.minLength ? "✓" : "•"} At least 8 characters
               </div>
-              <div className={checks.hasLetter ? "text-emerald-400" : "text-red-400"}>
+              <div
+                className={
+                  checks.hasLetter
+                    ? "text-emerald-400"
+                    : passwordStarted
+                      ? "text-red-400"
+                      : "text-ds-text-muted"
+                }
+              >
                 {checks.hasLetter ? "✓" : "•"} Includes a letter (A–Z)
               </div>
-              <div className={checks.hasNumber ? "text-emerald-400" : "text-red-400"}>
+              <div
+                className={
+                  checks.hasNumber
+                    ? "text-emerald-400"
+                    : passwordStarted
+                      ? "text-red-400"
+                      : "text-ds-text-muted"
+                }
+              >
                 {checks.hasNumber ? "✓" : "•"} Includes a number (0–9)
               </div>
             </div>
