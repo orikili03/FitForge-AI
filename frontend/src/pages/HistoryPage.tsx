@@ -170,7 +170,7 @@ export function HistoryPage() {
             ))}
             {completeMutation.isSuccess && (
               <li className="pt-2 text-[11px] text-emerald-600">
-                Workout completion recorded. Analytics will reflect it.
+                Workout completion recorded.
               </li>
             )}
             {completeMutation.isError && (

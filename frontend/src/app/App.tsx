@@ -6,12 +6,11 @@ import { RegisterPage } from "../pages/auth/RegisterPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { GenerateWorkoutPage } from "../pages/GenerateWorkoutPage";
 import { HistoryPage } from "../pages/HistoryPage";
-import { AnalyticsPage } from "../pages/AnalyticsPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { TodayWodPage } from "../pages/TodayWodPage";
 import { WorkoutBuilderPage } from "../pages/WorkoutBuilderPage";
 import { EquipmentPage } from "../pages/EquipmentPage";
-import { useAuthToken } from "../hooks/useAuthToken";
+import { useAuthToken } from "../contexts/AuthTokenContext";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthToken();
@@ -40,7 +39,6 @@ export default function App() {
         <Route path="wod/generate" element={<GenerateWorkoutPage />} />
         <Route path="wod/builder" element={<WorkoutBuilderPage />} />
         <Route path="history" element={<HistoryPage />} />
-        <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="equipment" element={<EquipmentPage />} />
         <Route path="profile" element={<ProfilePage />} />
       </Route>

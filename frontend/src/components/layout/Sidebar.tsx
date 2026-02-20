@@ -4,21 +4,19 @@ import {
   Flame,
   Sparkles,
   History,
-  BarChart3,
   Dumbbell,
   User,
   LogOut,
 } from "lucide-react";
-import { useAuthToken } from "../../hooks/useAuthToken";
+import { useAuthToken } from "../../contexts/AuthTokenContext";
 import { Button } from "../ui/Button";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/wod/today", label: "Today's WOD", icon: Flame, end: false },
   { to: "/wod/generate", label: "Generate", icon: Sparkles, end: false },
-  { to: "/history", label: "History", icon: History, end: false },
-  { to: "/analytics", label: "Analytics", icon: BarChart3, end: false },
   { to: "/equipment", label: "Equipment", icon: Dumbbell, end: false },
+  { to: "/history", label: "History", icon: History, end: false },
   { to: "/profile", label: "Profile", icon: User, end: false },
 ];
 

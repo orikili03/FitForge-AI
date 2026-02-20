@@ -1,18 +1,15 @@
 import { Link } from "react-router-dom";
 import { Flame, Sparkles } from "lucide-react";
 import { useWorkoutHistory } from "../features/workouts/workoutApi";
-import { useProgressAnalytics } from "../features/analytics/analyticsApi";
 import {
   Card,
   Button,
   SectionHeader,
-  ProgressCard,
   WorkoutCard,
 } from "../components/ui";
 
 export function DashboardPage() {
   const { data: history, isLoading: historyLoading } = useWorkoutHistory();
-  const { data: analytics } = useProgressAnalytics();
   const latest = history?.[0];
 
   return (
@@ -26,9 +23,8 @@ export function DashboardPage() {
         </p>
       </div>
 
-      {/* Today's Workout (left) + Activity (right) side by side */}
-      <section className="grid grid-cols-1 gap-ds-3 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-ds-3">
+      <section className="space-y-ds-3">
+        <div>
           <SectionHeader
             title="Today's Workout"
             subtitle={latest ? "Ready when you are." : "Generate one to get started."}
@@ -81,27 +77,6 @@ export function DashboardPage() {
               </div>
             </Card>
           )}
-        </div>
-        <div>
-          <ProgressCard title="Activity">
-            <div className="space-y-ds-2 text-ds-body-sm">
-              <div className="flex justify-between">
-                <span className="text-ds-text-muted">Completed</span>
-                <span className="font-semibold text-ds-text">
-                  {analytics?.totalSessions ?? 0}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-ds-text-muted">Avg RPE</span>
-                <span className="font-semibold text-ds-text">
-                  {analytics ? analytics.averageRpe.toFixed(1) : "—"}
-                </span>
-              </div>
-              <p className="pt-ds-1 text-ds-caption text-ds-text-muted">
-                Vary intensity; avoid back-to-back high RPE days.
-              </p>
-            </div>
-          </ProgressCard>
         </div>
       </section>
     </div>

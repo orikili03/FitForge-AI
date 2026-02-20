@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { useRegister } from "../../features/auth/authApi";
-import { useAuthToken } from "../../hooks/useAuthToken";
+import { useAuthToken } from "../../contexts/AuthTokenContext";
 
 interface RegisterFormValues {
   email: string;

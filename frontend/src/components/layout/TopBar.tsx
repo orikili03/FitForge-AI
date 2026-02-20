@@ -7,20 +7,18 @@ import {
   Flame,
   Sparkles,
   History,
-  BarChart3,
   Dumbbell,
   User,
   LogOut,
 } from "lucide-react";
-import { useAuthToken } from "../../hooks/useAuthToken";
+import { useAuthToken } from "../../contexts/AuthTokenContext";
 
 const navItems = [
   { to: "/", label: "Dashboard", end: true },
   { to: "/wod/today", label: "Today's WOD", end: false },
   { to: "/wod/generate", label: "Generate", end: false },
-  { to: "/history", label: "History", end: false },
-  { to: "/analytics", label: "Analytics", end: false },
   { to: "/equipment", label: "Equipment", end: false },
+  { to: "/history", label: "History", end: false },
   { to: "/profile", label: "Profile", end: false },
 ];
 
@@ -29,7 +27,6 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   "/wod/today": Flame,
   "/wod/generate": Sparkles,
   "/history": History,
-  "/analytics": BarChart3,
   "/equipment": Dumbbell,
   "/profile": User,
 };

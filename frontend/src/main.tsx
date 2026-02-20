@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { AuthTokenProvider } from "./contexts/AuthTokenContext";
 import App from "./app/App";
 import "./styles.css";
 
@@ -46,7 +47,9 @@ ReactDOM.createRoot(rootEl).render(
             v7_relativeSplatPath: true,
           }}
         >
-          <App />
+          <AuthTokenProvider>
+            <App />
+          </AuthTokenProvider>
         </BrowserRouter>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>

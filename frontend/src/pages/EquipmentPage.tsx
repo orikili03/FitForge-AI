@@ -154,18 +154,6 @@ export function EquipmentPage() {
     }
   }, [data]);
 
-  useEffect(() => {
-    if (!initialSyncDone.current || !data) return;
-    const timer = setTimeout(() => {
-      if (!hasAnyWeightError) updateMutation.mutate(local);
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [local, hasAnyWeightError, data]);
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-
-  const selectedIds = useMemo(() => new Set(local.selected.map((s) => s.id)), [local.selected]);
-
   const weightErrors = useMemo(() => {
     const errors: Record<string, string | null> = {};
     for (const s of local.selected) {
@@ -180,6 +168,18 @@ export function EquipmentPage() {
   }, [local.selected]);
 
   const hasAnyWeightError = Object.values(weightErrors).some((v) => v);
+
+  useEffect(() => {
+    if (!initialSyncDone.current || !data) return;
+    const timer = setTimeout(() => {
+      if (!hasAnyWeightError) updateMutation.mutate(local);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [local, hasAnyWeightError, data]);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const selectedIds = useMemo(() => new Set(local.selected.map((s) => s.id)), [local.selected]);
 
   const toggle = (id: string) => {
     setLocal((prev) => {
@@ -225,9 +225,7 @@ export function EquipmentPage() {
       <div>
         <h1 className="text-2xl font-semibold">Equipment</h1>
         <p className="text-sm text-ds-text-muted">
-          {local.selected.length === 0
-            ? "Choose a preset above. Bodyweight-only? Pick No equipment — changes save automatically."
-            : "Set weight ranges where relevant and drag to prioritize. Changes save automatically."}
+          Create and edit equipment presets here. Use them in Generate to choose which gear to include when generating a workout. Changes save automatically.
         </p>
         {updateMutation.isPending && (
           <p className="text-xs text-ds-text-muted mt-1">Saving…</p>
@@ -246,7 +244,7 @@ export function EquipmentPage() {
             </div>
 
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {BUILTIN_PRESETS.map((p) => (
+              {BUILTIN_PRESETS.filter((p) => p.id !== "none").map((p) => (
                 <button
                   key={p.id}
                   type="button"
