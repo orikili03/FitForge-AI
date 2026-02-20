@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "fitforge-ai-backend": "file:backend",
+    "fitforge-ai-frontend": "file:frontend"
+  }
+}
