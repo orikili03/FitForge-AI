@@ -30,6 +30,8 @@ export interface ProgressionInput {
 export interface ProgressionOutput {
   targetIntensity: "low" | "moderate" | "high";
   targetDuration: "short" | "medium" | "long";
+  /** Recent exposure by domain and pattern (for variation). */
+  recentExposure?: { byDomain: Record<string, number>; byPattern: Record<string, number> };
 }
 
 export interface ProgrammingInput {
@@ -38,6 +40,7 @@ export interface ProgrammingInput {
   progression: ProgressionOutput;
   primaryGoal: "strength" | "endurance" | "mixed" | "skill";
   protocol: "recommended" | "EMOM" | "AMRAP" | "FOR_TIME" | "TABATA" | "DEATH_BY" | "21_15_9";
+  timeCapMinutes: number;
 }
 
 export interface AssessmentAgent {

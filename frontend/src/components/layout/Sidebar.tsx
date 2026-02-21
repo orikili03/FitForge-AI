@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   Flame,
   Sparkles,
@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAuthToken } from "../../contexts/AuthTokenContext";
 import { Button } from "../ui/Button";
+import { Logo } from "../Logo";
 
 const navItems = [
   { to: "/", label: "Today's WOD", icon: Flame, end: true },
@@ -29,17 +30,12 @@ export function Sidebar() {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[17rem] flex-col border-r border-ds-border bg-ds-surface lg:flex">
-      <div className="flex items-center gap-3 border-b border-ds-border px-ds-2 py-ds-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-ds-lg bg-ds-accent text-ds-body-sm font-bold text-stone-950 shadow-ds-sm">
-          FF
-        </span>
-        <div className="min-w-0">
-          <div className="truncate text-ds-body-sm font-semibold text-ds-text">
-            FitForge AI
-          </div>
-          <div className="truncate text-ds-caption text-ds-text-muted">
-            CrossFit WOD Engine
-          </div>
+      <div className="flex flex-col gap-1 border-b border-ds-border px-ds-2 py-ds-3">
+        <Link to="/" className="self-start" aria-label="Go to home">
+          <Logo className="h-9 w-auto shrink-0 text-ds-accent" />
+        </Link>
+        <div className="truncate text-ds-caption text-ds-text-muted">
+          CrossFit WOD Engine
         </div>
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-ds-1 py-ds-3">

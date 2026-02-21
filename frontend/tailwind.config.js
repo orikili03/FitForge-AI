@@ -19,8 +19,8 @@ export default {
           // Secondary = labels, captions, metadata
           "text-muted": "#78716c",
           "text-faint": "#57534e",
-          accent: "#f59e0b",
-          "accent-hover": "#fbbf24",
+          accent: "#fbe288",
+          "accent-hover": "#fce9a0",
         },
       },
       fontFamily: {

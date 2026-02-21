@@ -48,6 +48,7 @@ export class WorkoutEngine {
       progression,
       primaryGoal: input.goal,
       protocol: input.protocol,
+      timeCapMinutes: input.timeCapMinutes,
     });
 
     return spec;

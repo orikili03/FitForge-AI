@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const DEFAULT_URI = "mongodb://localhost:27017/fitforge";
+const DEFAULT_URI = "mongodb://localhost:27017/wodlab";
 
 export async function connectMongo(): Promise<void> {
   if (mongoose.connection.readyState === 1) {

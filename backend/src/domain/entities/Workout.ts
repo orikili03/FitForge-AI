@@ -1,3 +1,11 @@
+/** Per-movement reps and optional weight/distance for display. */
+export interface MovementItemSpec {
+  reps: number;
+  name: string;
+  weight?: string;
+  distance?: string;
+}
+
 export interface WorkoutSpec {
   warmup: string[];
   wod: {
@@ -5,10 +13,22 @@ export interface WorkoutSpec {
     duration: number;
     description: string;
     movements: string[];
+    /** Rounds (for RFT-style); undefined when not applicable. */
+    rounds?: number;
+    /** Reps and optional weight/distance per movement. */
+    movementItems?: MovementItemSpec[];
   };
   scalingOptions: string[];
   finisher?: string[];
   intensityGuidance: string;
+  /** Optional metadata for UX (e.g. "Sprint", "Long aerobic"). */
+  intendedStimulus?: string;
+  /** Optional time domain (e.g. "<10 min", "10–20", "20+"). */
+  timeDomain?: string;
+  /** Optional movement emphasis tags. */
+  movementEmphasis?: string[];
+  /** Short stimulus/strategy note (CrossFit-style). */
+  stimulusNote?: string;
 }
 
 export interface WorkoutProps {

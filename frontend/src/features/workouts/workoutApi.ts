@@ -1,6 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../services/apiClient";
 
+export interface MovementItemSpec {
+  reps: number;
+  name: string;
+  weight?: string;
+  distance?: string;
+}
+
 export interface WorkoutSpec {
   warmup: string[];
   wod: {
@@ -8,10 +15,16 @@ export interface WorkoutSpec {
     duration: number;
     description: string;
     movements: string[];
+    rounds?: number;
+    movementItems?: MovementItemSpec[];
   };
   scalingOptions: string[];
   finisher?: string[];
   intensityGuidance: string;
+  intendedStimulus?: string;
+  timeDomain?: string;
+  movementEmphasis?: string[];
+  stimulusNote?: string;
 }
 
 export interface WorkoutResponse extends WorkoutSpec {
@@ -20,6 +33,7 @@ export interface WorkoutResponse extends WorkoutSpec {
   type: string;
   durationMinutes: number;
   completed?: boolean;
+  timeDomain?: string;
 }
 
 export interface CompleteWorkoutPayload {

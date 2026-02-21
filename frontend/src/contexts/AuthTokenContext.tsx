@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 
-const STORAGE_KEY = "fitforge_token";
+const STORAGE_KEY = "wodlab_token";
 
 type AuthTokenContextValue = {
   token: string | null;

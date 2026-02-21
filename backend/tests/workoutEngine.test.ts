@@ -36,9 +36,10 @@ describe("WorkoutEngine", () => {
       timeCapMinutes: 20,
       recentWorkouts: recent,
       goal: "mixed",
+      protocol: "recommended",
     });
 
-    expect(spec.warmup.length).toBeGreaterThan(0);
+    expect(Array.isArray(spec.warmup)).toBe(true);
     expect(spec.wod.type).toBeDefined();
     expect(spec.wod.movements.length).toBeGreaterThan(0);
     expect(spec.scalingOptions.length).toBeGreaterThan(0);

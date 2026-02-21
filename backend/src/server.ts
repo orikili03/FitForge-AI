@@ -41,7 +41,7 @@ if (process.env.NODE_ENV !== "test") {
       console.log("Connected to MongoDB");
       app.listen(PORT, () => {
         // eslint-disable-next-line no-console
-        console.log(`FitForge AI backend listening on port ${PORT}`);
+        console.log(`WODLab backend listening on port ${PORT}`);
       });
     })
     .catch((err) => {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   Menu,
   X,
@@ -11,6 +11,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuthToken } from "../../contexts/AuthTokenContext";
+import { Logo } from "../Logo";
 
 const navItems = [
   { to: "/", label: "Today's WOD", end: true },
@@ -42,14 +43,9 @@ export function TopBar() {
   return (
     <header className="fixed left-0 right-0 top-0 z-40 border-b border-ds-border bg-ds-surface/95 shadow-ds-sm backdrop-blur-md lg:hidden">
       <div className="flex h-14 items-center justify-between px-4">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ds-lg bg-ds-accent text-ds-body-sm font-bold text-stone-950 shadow-ds-sm">
-            FF
-          </span>
-          <span className="text-ds-body-sm font-semibold text-ds-text">
-            FitForge AI
-          </span>
-        </div>
+        <Link to="/" className="flex items-center gap-2.5" aria-label="Go to home" onClick={() => setOpen(false)}>
+          <Logo className="h-8 w-auto shrink-0 text-ds-accent" />
+        </Link>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}

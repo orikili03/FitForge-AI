@@ -18,8 +18,8 @@ export const colors = {
   textSecondary: "#d6d3d1",
   textMuted: "#78716c",
   textFaint: "#57534e",
-  accent: "#f59e0b",
-  accentHover: "#fbbf24",
+  accent: "#fbe288",
+  accentHover: "#fce9a0",
   statRed: "rgba(248,113,113,0.14)",
   statOrange: "rgba(251,146,60,0.14)",
   statBlue: "rgba(96,165,250,0.14)",
@@ -31,8 +31,8 @@ export const chartColors = {
   text: colors.text,
   tooltipBg: colors.surface,
   tooltipBorder: colors.border,
-  bar: "rgba(251,146,60,0.9)",
-  line: "rgba(251,146,60,0.9)",
+  bar: "rgba(251,226,136,0.9)",
+  line: "rgba(251,226,136,0.9)",
 } as const;
 
 export const spacing = {

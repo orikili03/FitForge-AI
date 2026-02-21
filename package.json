@@ -5,7 +5,7 @@
     "start": "npm start --prefix backend"
   },
   "dependencies": {
-    "fitforge-ai-backend": "file:backend",
-    "fitforge-ai-frontend": "file:frontend"
+    "wodlab-backend": "file:backend",
+    "wodlab-frontend": "file:frontend"
   }
 }

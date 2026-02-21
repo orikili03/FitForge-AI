@@ -123,8 +123,8 @@ export function GenerateWorkoutPage() {
         protocol: values.protocol,
       },
       {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["workouts", "history"] });
+        onSuccess: async () => {
+          await queryClient.refetchQueries({ queryKey: ["workouts", "history"] });
           navigate("/");
         },
       }
@@ -171,7 +171,7 @@ export function GenerateWorkoutPage() {
       <div>
         <h1 className="text-2xl font-semibold text-ds-text">Generate Workout</h1>
         <p className="text-sm text-ds-text-muted">
-          FitForge AI uses your context to design a CrossFit-style WOD with appropriate intensity and scaling.
+          WODLab uses your context to design a CrossFit-style WOD with appropriate intensity and scaling.
         </p>
       </div>
 
@@ -401,16 +401,6 @@ export function GenerateWorkoutPage() {
               </div>
               <div>
                 <h3 className="text-xs uppercase tracking-wide text-ds-text-muted mb-1">
-                  Warm-up
-                </h3>
-                <ul className="list-disc list-inside break-words">
-                  {wod.warmup.map((w) => (
-                    <li key={w}>{w}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-xs uppercase tracking-wide text-ds-text-muted mb-1">
                   Movements
                 </h3>
                 <ul className="list-disc list-inside break-words">
@@ -435,6 +425,29 @@ export function GenerateWorkoutPage() {
                 </h3>
                 <p className="break-words">{wod.intensityGuidance}</p>
               </div>
+              {wod.intendedStimulus && (
+                <div>
+                  <h3 className="text-xs uppercase tracking-wide text-ds-text-muted mb-1">
+                    Intended stimulus
+                  </h3>
+                  <p className="break-words">{wod.intendedStimulus}</p>
+                </div>
+              )}
+              {wod.stimulusNote && (
+                <p className="text-ds-text-muted text-sm italic break-words">{wod.stimulusNote}</p>
+              )}
+              {wod.warmup && wod.warmup.length > 0 && (
+                <div>
+                  <h3 className="text-xs uppercase tracking-wide text-ds-text-muted mb-1">
+                    Warm-up
+                  </h3>
+                  <ul className="list-disc list-inside break-words">
+                    {wod.warmup.map((s) => (
+                      <li key={s}>{s}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -1,4 +1,4 @@
-# FitForge AI — Design System
+# WODLab — Design System
 
 Single source of truth for layout, components, and styling. All UI must use these tokens (via Tailwind `ds-*` classes or `src/design-system/tokens.ts` for non-Tailwind contexts).
 

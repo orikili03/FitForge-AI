@@ -33,7 +33,7 @@ export function LoginPage() {
             Sign in
           </h1>
           <p className="text-sm text-ds-text-muted">
-            Log into FitForge AI to generate adaptive CrossFit WODs.
+            Log into WODLab to generate adaptive CrossFit WODs.
           </p>
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

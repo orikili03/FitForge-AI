@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
-import { useWorkoutHistory, useCompleteWorkout } from "../features/workouts/workoutApi";
+import { Search, Eye, X } from "lucide-react";
+import { useWorkoutHistory } from "../features/workouts/workoutApi";
 import type { WorkoutResponse } from "../features/workouts/workoutApi";
 
 function filterHistory(
@@ -44,19 +44,15 @@ function filterHistory(
 
 export function HistoryPage() {
   const { data, isLoading } = useWorkoutHistory();
-  const completeMutation = useCompleteWorkout();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterDuration, setFilterDuration] = useState("");
+  const [viewWorkout, setViewWorkout] = useState<WorkoutResponse | null>(null);
 
   const filtered = useMemo(() => {
     if (!data) return [];
     return filterHistory(data, searchQuery, filterType, filterDuration);
   }, [data, searchQuery, filterType, filterDuration]);
-
-  const handleQuickComplete = (workoutId: string) => {
-    completeMutation.mutate({ workoutId });
-  };
 
   const wodTypes = useMemo(() => {
     if (!data) return [];
@@ -73,7 +69,7 @@ export function HistoryPage() {
       <div>
         <h1 className="text-2xl font-semibold text-ds-text">History</h1>
         <p className="text-sm text-ds-text-muted mt-1">
-          Search and filter past workouts. Mark sessions done when you complete them.
+          Search and filter past workouts. Click the eye to view details.
         </p>
       </div>
 
@@ -155,30 +151,98 @@ export function HistoryPage() {
                     {w.wod.type} • {w.wod.duration} min
                   </div>
                   <p className="text-xs text-ds-text-muted">
-                    {new Date(w.date).toLocaleString()} • {w.wod.movements.join(" / ")}
+                    {new Date(w.date).toLocaleDateString()} • {w.wod.movements.join(" / ")}
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => handleQuickComplete(w.id)}
-                  className="text-xs text-amber-600 hover:text-amber-700 font-medium"
-                  disabled={completeMutation.isPending}
+                  onClick={() => setViewWorkout(w)}
+                  className="p-2 rounded-lg text-ds-text-muted hover:text-amber-500 hover:bg-amber-500/10 transition-colors"
+                  title="View workout"
+                  aria-label="View workout details"
                 >
-                  Mark done
+                  <Eye className="h-5 w-5" />
                 </button>
               </li>
             ))}
-            {completeMutation.isSuccess && (
-              <li className="pt-2 text-[11px] text-emerald-600">
-                Workout completion recorded.
-              </li>
-            )}
-            {completeMutation.isError && (
-              <li className="pt-2 text-[11px] text-red-500">
-                {(completeMutation.error as any).message ?? "Unable to record completion"}
-              </li>
-            )}
           </ul>
+        )}
+
+        {viewWorkout && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setViewWorkout(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="workout-detail-title"
+          >
+            <div
+              className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-ds-xl border border-ds-border bg-ds-surface p-5 shadow-ds-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <h2 id="workout-detail-title" className="text-lg font-semibold text-ds-text">
+                  {viewWorkout.wod.type} • {viewWorkout.wod.duration} min
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setViewWorkout(null)}
+                  className="p-1.5 rounded-lg text-ds-text-muted hover:text-ds-text hover:bg-ds-surface-hover transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <dl className="space-y-3 text-sm">
+                <div>
+                  <dt className="text-ds-text-muted font-medium">Date & time</dt>
+                  <dd className="text-ds-text mt-0.5">
+                    {new Date(viewWorkout.date).toLocaleDateString(undefined, {
+                      weekday: "short",
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}{" "}
+                    at {new Date(viewWorkout.date).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                  </dd>
+                </div>
+                {viewWorkout.completed && (
+                  <div>
+                    <dt className="text-ds-text-muted font-medium">Status</dt>
+                    <dd className="text-ds-text mt-0.5 text-emerald-500 font-medium">Completed</dd>
+                  </div>
+                )}
+                <div>
+                  <dt className="text-ds-text-muted font-medium">Description</dt>
+                  <dd className="text-ds-text mt-0.5">{viewWorkout.wod.description}</dd>
+                </div>
+                <div>
+                  <dt className="text-ds-text-muted font-medium">Movements</dt>
+                  <dd className="text-ds-text mt-0.5">
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {viewWorkout.wod.movements.map((m, i) => (
+                        <li key={i}>{m}</li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-ds-text-muted font-medium">Scaling options</dt>
+                  <dd className="text-ds-text mt-0.5">
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {viewWorkout.scalingOptions.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-ds-text-muted font-medium">Intensity</dt>
+                  <dd className="text-ds-text mt-0.5">{viewWorkout.intensityGuidance}</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
         )}
       </div>
     </div>

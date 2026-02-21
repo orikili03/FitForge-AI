@@ -1,6 +1,6 @@
-## FitForge AI — Adaptive CrossFit WOD Engine
+## WODLab — Adaptive CrossFit WOD Engine
 
-**FitForge AI** is a production-ready full-stack web app that generates personalized CrossFit-style workouts (WODs) based on user profile, equipment, time, goals, and recent history.
+**WODLab** is a production-ready full-stack web app that generates personalized CrossFit-style workouts (WODs) based on user profile, equipment, time, goals, and recent history.
 
 ### Tech stack
 
@@ -21,7 +21,7 @@ npm install
 Create `.env` in `backend`:
 
 ```bash
-MONGO_URI="mongodb://localhost:27017/fitforge"
+MONGO_URI="mongodb://localhost:27017/wodlab"
 JWT_SECRET="super-secret-jwt-key"
 ```
 
@@ -31,7 +31,7 @@ JWT_SECRET="super-secret-jwt-key"
 npm run dev
 ```
 
-The API will be available on `http://localhost:4000`. The server will connect to MongoDB using `MONGO_URI` (or `mongodb://localhost:27017/fitforge` by default).
+The API will be available on `http://localhost:4000`. The server will connect to MongoDB using `MONGO_URI` (or `mongodb://localhost:27017/wodlab` by default).
 
 ### Frontend: getting started
 
