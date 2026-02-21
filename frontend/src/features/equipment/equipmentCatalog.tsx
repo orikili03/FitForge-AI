@@ -68,16 +68,6 @@ export const BUILTIN_PRESETS: Array<{
     selected: [],
   },
   {
-    id: "travel",
-    name: "Travel",
-    description: "Light gear, bodyweight-friendly.",
-    selected: [
-      { id: "jump_rope" },
-      { id: "mat" },
-      { id: "pullup_bar" },
-    ],
-  },
-  {
     id: "home",
     name: "Home/Garage",
     description: "Common home setup.",
@@ -106,6 +96,16 @@ export const BUILTIN_PRESETS: Array<{
       { id: "jump_rope" },
       { id: "wall_ball" },
       { id: "box" },
+    ],
+  },
+  {
+    id: "travel",
+    name: "Travel",
+    description: "Light gear, bodyweight-friendly.",
+    selected: [
+      { id: "jump_rope" },
+      { id: "mat" },
+      { id: "pullup_bar" },
     ],
   },
   {

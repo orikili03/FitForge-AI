@@ -13,6 +13,14 @@ function isWeightDependent(id: string) {
   return EQUIPMENT_CATALOG.find((e) => e.id === id)?.weightDependent ?? false;
 }
 
+function capitalizeEachWord(s: string): string {
+  return s
+    .trim()
+    .split(/\s+/)
+    .map((word) => (word.length > 0 ? word[0].toUpperCase() + word.slice(1).toLowerCase() : word))
+    .join(" ");
+}
+
 function EquipmentCard({
   id,
   label,
@@ -111,6 +119,9 @@ export function EquipmentPage() {
   const [activeCustomPresetId, setActiveCustomPresetId] = useState<string | null>(null);
   const [showCreatePreset, setShowCreatePreset] = useState(false);
   const [newPresetName, setNewPresetName] = useState("");
+  const [presetToRemove, setPresetToRemove] = useState<{ id: string; name: string } | null>(null);
+  const [hasChosenPreset, setHasChosenPreset] = useState(false);
+  const [presetNameError, setPresetNameError] = useState<string | null>(null);
   const initialSyncDone = useRef(false);
 
   useEffect(() => {
@@ -175,6 +186,7 @@ export function EquipmentPage() {
   const applyPreset = (selected: EquipmentSelection[], customPresetId?: string) => {
     setShowCreatePreset(false);
     setNewPresetName("");
+    setHasChosenPreset(true);
     setLocal((prev) => ({ ...prev, selected }));
     setActiveCustomPresetId(customPresetId ?? null);
   };
@@ -184,11 +196,24 @@ export function EquipmentPage() {
     if (activeCustomPresetId === id) setActiveCustomPresetId(null);
   };
 
+  const existingPresetNames = useMemo(() => {
+    const builtin = new Set(BUILTIN_PRESETS.map((p) => p.name.toLowerCase()));
+    const custom = new Set(local.customPresets.map((p) => p.name.toLowerCase()));
+    return (name: string) => builtin.has(name.toLowerCase()) || custom.has(name.toLowerCase());
+  }, [local.customPresets]);
+
   const createNewPreset = () => {
-    const name = newPresetName.trim();
-    if (!name) return;
+    const raw = newPresetName.trim();
+    if (!raw) return;
+    const name = capitalizeEachWord(raw);
+    if (existingPresetNames(name)) {
+      setPresetNameError("A preset with this name already exists.");
+      return;
+    }
+    setPresetNameError(null);
     const id = `preset_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
     const preset: CustomPreset = { id, name, selected: [] };
+    setHasChosenPreset(true);
     setLocal((prev) => ({ ...prev, customPresets: [...prev.customPresets, preset], selected: [] }));
     setActiveCustomPresetId(id);
     setNewPresetName("");
@@ -216,7 +241,7 @@ export function EquipmentPage() {
         )}
       </div>
 
-      <div className={!showCreatePreset && (local.selected.length > 0 || activeCustomPresetId) ? "grid grid-cols-1 lg:grid-cols-[1.4fr,0.6fr] gap-6" : ""}>
+      <div className={!showCreatePreset && hasChosenPreset ? "grid grid-cols-1 lg:grid-cols-[1.4fr,0.6fr] gap-6" : ""}>
         <div className="space-y-6">
           <div className="card">
             <div className="flex items-center justify-between gap-3">
@@ -229,42 +254,26 @@ export function EquipmentPage() {
 
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {BUILTIN_PRESETS.filter((p) => p.id !== "none" && p.id !== "custom").map((p) => {
-                const active = isPresetActive(p.selected) && activeCustomPresetId === null;
+                const active = hasChosenPreset && isPresetActive(p.selected) && activeCustomPresetId === null;
                 return (
-                  <div
+                  <button
                     key={p.id}
+                    type="button"
+                    onClick={() => applyPreset(p.selected)}
                     className={[
-                      "flex items-start gap-2 rounded-xl border px-4 py-3 transition-colors",
+                      "w-full rounded-xl border px-4 py-3 text-left transition-colors",
                       active
                         ? "border-amber-500/60 bg-ds-surface shadow-[0_0_0_1px_rgba(245,158,11,0.25)]"
                         : "border-ds-border bg-ds-surface-subtle hover:border-ds-border-strong",
                     ].join(" ")}
                   >
-                    <button
-                      type="button"
-                      onClick={() => applyPreset(p.selected)}
-                      className="flex-1 min-w-0 text-left"
-                    >
-                      <div className="text-sm font-medium">{p.name}</div>
-                      <div className="text-xs text-ds-text-muted">{p.description}</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.alert("This preset cannot be removed.");
-                      }}
-                      className="shrink-0 p-1.5 rounded text-ds-text-muted hover:text-red-500 transition-colors"
-                      title="Remove preset"
-                      aria-label="Remove preset"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                    <div className="text-sm font-medium">{p.name}</div>
+                    <div className="text-xs text-ds-text-muted">{p.description}</div>
+                  </button>
                 );
               })}
               {local.customPresets.map((p) => {
-                const active = isPresetActive(p.selected) && activeCustomPresetId === p.id;
+                const active = hasChosenPreset && isPresetActive(p.selected) && activeCustomPresetId === p.id;
                 return (
                   <div
                     key={p.id}
@@ -287,9 +296,7 @@ export function EquipmentPage() {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm(`Are you sure you want to remove the preset "${p.name}"?`)) {
-                          removeCustomPreset(p.id);
-                        }
+                        setPresetToRemove({ id: p.id, name: p.name });
                       }}
                       className="shrink-0 p-1.5 rounded text-ds-text-muted hover:text-red-500 transition-colors"
                       title="Remove preset"
@@ -303,62 +310,75 @@ export function EquipmentPage() {
               {(() => {
                 const customBuiltin = BUILTIN_PRESETS.find((p) => p.id === "custom");
                 if (!customBuiltin) return null;
-                const active = isPresetActive(customBuiltin.selected) && activeCustomPresetId === null;
+                const active = hasChosenPreset && isPresetActive(customBuiltin.selected) && activeCustomPresetId === null;
                 return (
-                  <div
+                  <button
                     key="custom"
+                    type="button"
+                    onClick={() => setShowCreatePreset(true)}
                     className={[
-                      "flex items-start gap-2 rounded-xl border px-4 py-3 transition-colors",
+                      "w-full rounded-xl border px-4 py-3 text-left transition-colors",
                       active
                         ? "border-amber-500/60 bg-ds-surface shadow-[0_0_0_1px_rgba(245,158,11,0.25)]"
                         : "border-ds-border bg-ds-surface-subtle hover:border-ds-border-strong",
                     ].join(" ")}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setShowCreatePreset(true)}
-                      className="flex-1 min-w-0 text-left"
-                    >
-                      <div className="text-sm font-medium">{customBuiltin.name}</div>
-                      <div className="text-xs text-ds-text-muted">{customBuiltin.description}</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.alert("This preset cannot be removed.");
-                      }}
-                      className="shrink-0 p-1.5 rounded text-ds-text-muted hover:text-red-500 transition-colors"
-                      title="Remove preset"
-                      aria-label="Remove preset"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                    <div className="text-sm font-medium">{customBuiltin.name}</div>
+                    <div className="text-xs text-ds-text-muted">{customBuiltin.description}</div>
+                  </button>
                 );
               })()}
             </div>
 
             {showCreatePreset && (
-              <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-                <input
-                  type="text"
-                  placeholder="Preset name"
-                  maxLength={60}
-                  value={newPresetName}
-                  onChange={(e) => setNewPresetName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), createNewPreset())}
-                  className="flex-1 min-w-[140px] rounded-lg border border-ds-border bg-ds-surface-subtle px-3 py-2 text-sm text-ds-text placeholder:text-ds-text-muted focus:border-ds-border-strong focus:outline-none"
-                />
-                <button type="button" onClick={createNewPreset} className="btn-primary text-sm" disabled={!newPresetName.trim()}>
-                  Create preset
-                </button>
+              <div className="mt-4 rounded-xl border border-ds-border bg-ds-surface-subtle px-4 py-3 space-y-2">
+                <label className="block text-sm font-medium text-ds-text">New preset name</label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. Home Gym"
+                    maxLength={60}
+                    value={newPresetName}
+                    onChange={(e) => {
+                      setNewPresetName(e.target.value);
+                      setPresetNameError(null);
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), createNewPreset())}
+                    className="flex-1 min-w-[140px] rounded-xl border border-ds-border bg-ds-bg px-3 py-2 text-sm text-ds-text placeholder:text-ds-text-muted focus:border-ds-border-strong focus:outline-none focus:ring-1 focus:ring-ds-border-strong"
+                    aria-invalid={!!presetNameError}
+                    aria-describedby={presetNameError ? "preset-name-error" : undefined}
+                  />
+                  <button
+                    type="button"
+                    onClick={createNewPreset}
+                    className="rounded-xl border border-transparent bg-amber-400 px-4 py-2 text-sm font-semibold text-stone-950 hover:bg-amber-300 transition-colors disabled:opacity-50 disabled:pointer-events-none shrink-0"
+                    disabled={!newPresetName.trim()}
+                  >
+                    Create preset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreatePreset(false);
+                      setNewPresetName("");
+                      setPresetNameError(null);
+                    }}
+                    className="rounded-xl border border-ds-border bg-ds-surface px-4 py-2 text-sm font-medium text-ds-text hover:bg-ds-surface-hover transition-colors shrink-0"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {presetNameError && (
+                  <p id="preset-name-error" className="text-xs text-red-400">
+                    {presetNameError}
+                  </p>
+                )}
               </div>
             )}
 
           </div>
 
-          {!showCreatePreset && (local.selected.length > 0 || activeCustomPresetId) && (
+          {!showCreatePreset && hasChosenPreset && (
             <>
               {(["Gymnastics", "Strength", "Conditioning", "Optional"] as EquipmentCategory[]).map((cat) => (
                 <div key={cat} className="space-y-3">
@@ -397,6 +417,48 @@ export function EquipmentPage() {
         </div>
 
       </div>
+
+      {/* Remove preset confirmation */}
+      {presetToRemove && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setPresetToRemove(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="remove-preset-title"
+        >
+          <div
+            className="mx-4 w-full max-w-xs rounded-ds-xl border border-ds-border bg-ds-surface p-5 shadow-ds-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="remove-preset-title" className="text-lg font-semibold text-ds-text mb-1">
+              Remove preset?
+            </h3>
+            <p className="text-sm text-ds-text-muted mb-5">
+              Are you sure you want to remove &quot;{presetToRemove.name}&quot;? This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setPresetToRemove(null)}
+                className="flex-1 rounded-ds-xl border border-ds-border bg-ds-surface-subtle py-2.5 text-sm font-medium text-ds-text hover:bg-ds-surface-hover transition-all duration-250"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  removeCustomPreset(presetToRemove.id);
+                  setPresetToRemove(null);
+                }}
+                className="flex-1 rounded-ds-xl bg-amber-400 py-2.5 text-sm font-semibold text-stone-950 hover:bg-amber-300 transition-all duration-250"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

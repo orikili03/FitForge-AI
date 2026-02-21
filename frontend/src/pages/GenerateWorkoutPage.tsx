@@ -77,7 +77,7 @@ export function GenerateWorkoutPage() {
     const builtin = BUILTIN_PRESETS.find((p) => p.id === selectedPresetId);
     const custom = customPresets.find((p) => p.id === selectedPresetId);
     const selected = builtin?.selected ?? custom?.selected ?? [];
-    return selected.map((s) => s.id).join(",");
+    return selected.map((s) => s.id).sort().join(",");
   }, [selectedPresetId, customPresets]);
 
   useEffect(() => {
@@ -86,7 +86,7 @@ export function GenerateWorkoutPage() {
     const selected = builtin?.selected ?? custom?.selected ?? [];
     setIncludedGearIds(new Set(selected.map((s) => s.id)));
     if (selectedPresetId !== "custom") setCustomGearWeights({});
-  }, [currentGearIdsKey, selectedPresetId]);
+  }, [selectedPresetId, customPresets]);
 
   const toggleGear = (id: string) => {
     setIncludedGearIds((prev) => {
