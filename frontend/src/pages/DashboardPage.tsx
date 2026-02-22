@@ -5,7 +5,7 @@ import {
   Card,
   Button,
   SectionHeader,
-  WorkoutCard,
+  SummaryWorkoutCard,
 } from "../components/ui";
 
 export function DashboardPage() {
@@ -48,7 +48,7 @@ export function DashboardPage() {
             </Card>
           )}
           {!historyLoading && latest && (
-            <WorkoutCard
+            <SummaryWorkoutCard
               title={latest.wod.type}
               wod={latest.wod}
               movementPreviewCount={4}
@@ -66,7 +66,7 @@ export function DashboardPage() {
                   No workout yet
                 </h2>
                 <p className="text-ds-body-sm text-ds-text-muted">
-                  Generate a WOD from your equipment and goals.
+                  Generate a WOD from your equipment.
                 </p>
                 <Link to="/wod/generate" className="inline-block">
                   <Button variant="primary" size="lg">

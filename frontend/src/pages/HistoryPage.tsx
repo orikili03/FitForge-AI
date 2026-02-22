@@ -1,7 +1,15 @@
 import { useMemo, useState } from "react";
 import { Search, Eye, X } from "lucide-react";
 import { useWorkoutHistory } from "../features/workouts/workoutApi";
+import { expandForDisplay } from "../utils/abbreviations";
+import { WodBlock } from "../components/wod/WodBlock";
 import type { WorkoutResponse } from "../features/workouts/workoutApi";
+
+function formatCompletionTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  return s < 10 ? `${m}:0${s}` : `${m}:${s}`;
+}
 
 function filterHistory(
   list: WorkoutResponse[],
@@ -148,10 +156,21 @@ export function HistoryPage() {
               <li key={w.id} className="py-3 flex items-center justify-between gap-3">
                 <div>
                   <div className="font-medium text-ds-text">
-                    {w.wod.type} • {w.wod.duration} min
+                    {w.wod.type}
+                    {(w.wod.duration ?? w.durationMinutes) != null && (w.wod.duration ?? w.durationMinutes) > 0 && (
+                      <> • {(w.wod.duration ?? w.durationMinutes)} min</>
+                    )}
+                    {w.completed && (w.completionTime != null || (w.roundsOrReps != null && w.roundsOrReps > 0)) && (
+                      <span className="text-ds-text-muted font-normal">
+                        {" · "}
+                        {w.completionTime != null && formatCompletionTime(w.completionTime)}
+                        {w.completionTime != null && w.roundsOrReps != null && w.roundsOrReps > 0 && " · "}
+                        {w.roundsOrReps != null && w.roundsOrReps > 0 && `${w.roundsOrReps} rds`}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-ds-text-muted">
-                    {new Date(w.date).toLocaleDateString()} • {w.wod.movements.join(" / ")}
+                    {new Date(w.date).toLocaleDateString()} • {w.wod.movements.map(expandForDisplay).join(" / ")}
                   </p>
                 </div>
                 <button
@@ -182,7 +201,10 @@ export function HistoryPage() {
             >
               <div className="flex items-start justify-between gap-3 mb-4">
                 <h2 id="workout-detail-title" className="text-lg font-semibold text-ds-text">
-                  {viewWorkout.wod.type} • {viewWorkout.wod.duration} min
+                  {viewWorkout.wod.type}
+                  {(viewWorkout.wod.duration ?? viewWorkout.durationMinutes) != null && (viewWorkout.wod.duration ?? viewWorkout.durationMinutes) > 0 && (
+                    <> • {(viewWorkout.wod.duration ?? viewWorkout.durationMinutes)} min</>
+                  )}
                 </h2>
                 <button
                   type="button"
@@ -193,54 +215,44 @@ export function HistoryPage() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <dl className="space-y-3 text-sm">
-                <div>
-                  <dt className="text-ds-text-muted font-medium">Date & time</dt>
-                  <dd className="text-ds-text mt-0.5">
-                    {new Date(viewWorkout.date).toLocaleDateString(undefined, {
-                      weekday: "short",
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}{" "}
-                    at {new Date(viewWorkout.date).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                  </dd>
-                </div>
-                {viewWorkout.completed && (
-                  <div>
-                    <dt className="text-ds-text-muted font-medium">Status</dt>
-                    <dd className="text-ds-text mt-0.5 text-emerald-500 font-medium">Completed</dd>
+              <div className="mb-4 text-sm text-ds-text-muted">
+                {new Date(viewWorkout.date).toLocaleDateString(undefined, {
+                  weekday: "short",
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}{" "}
+                at {new Date(viewWorkout.date).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+              </div>
+              {viewWorkout.equipmentPresetName && (
+                <p className="mb-4 text-ds-body-sm text-ds-text-muted">
+                  Rig: <span className="font-medium text-ds-text">{viewWorkout.equipmentPresetName}</span>
+                </p>
+              )}
+
+              <div className="mb-4">
+                <WodBlock
+                  type={viewWorkout.wod.type}
+                  durationMinutes={viewWorkout.wod.duration ?? viewWorkout.durationMinutes ?? 0}
+                  rounds={viewWorkout.wod.rounds}
+                  movementItems={viewWorkout.wod.movementItems}
+                  movements={viewWorkout.wod.movements}
+                />
+              </div>
+
+              {viewWorkout.completed && (viewWorkout.completionTime != null || (viewWorkout.roundsOrReps != null && viewWorkout.roundsOrReps > 0)) && (
+                <div className="rounded-ds-lg border border-ds-border bg-ds-surface-subtle p-4 space-y-2">
+                  <p className="text-xs uppercase tracking-wider text-ds-text-muted font-medium">Your result</p>
+                  <div className="flex flex-wrap gap-4 text-ds-text">
+                    {viewWorkout.completionTime != null && (
+                      <span><strong>Time</strong> {formatCompletionTime(viewWorkout.completionTime)}</span>
+                    )}
+                    {viewWorkout.roundsOrReps != null && viewWorkout.roundsOrReps > 0 && (
+                      <span><strong>Rounds</strong> {viewWorkout.roundsOrReps}</span>
+                    )}
                   </div>
-                )}
-                <div>
-                  <dt className="text-ds-text-muted font-medium">Description</dt>
-                  <dd className="text-ds-text mt-0.5">{viewWorkout.wod.description}</dd>
                 </div>
-                <div>
-                  <dt className="text-ds-text-muted font-medium">Movements</dt>
-                  <dd className="text-ds-text mt-0.5">
-                    <ul className="list-disc list-inside space-y-0.5">
-                      {viewWorkout.wod.movements.map((m, i) => (
-                        <li key={i}>{m}</li>
-                      ))}
-                    </ul>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-ds-text-muted font-medium">Scaling options</dt>
-                  <dd className="text-ds-text mt-0.5">
-                    <ul className="list-disc list-inside space-y-0.5">
-                      {viewWorkout.scalingOptions.map((s, i) => (
-                        <li key={i}>{s}</li>
-                      ))}
-                    </ul>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-ds-text-muted font-medium">Intensity</dt>
-                  <dd className="text-ds-text mt-0.5">{viewWorkout.intensityGuidance}</dd>
-                </div>
-              </dl>
+              )}
             </div>
           </div>
         )}

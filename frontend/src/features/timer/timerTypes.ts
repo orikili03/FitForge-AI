@@ -12,6 +12,8 @@ export interface TimerConfig {
   restSeconds: number;
   /** Total session duration in seconds; used as countdown for AMRAP or time-cap for FOR_TIME */
   durationSeconds: number;
+  /** Show manual round counter (revert / +1). False for EMOM, Tabata, chipper (21-15-9), etc. */
+  showRoundCounter: boolean;
 }
 
 export interface ComputedTimerState {

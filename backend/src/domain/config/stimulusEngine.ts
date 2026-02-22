@@ -27,16 +27,15 @@ export interface StimulusDecision {
 }
 
 /**
- * Derives stimulus from time cap, goal, progression, and fatigue.
+ * Derives stimulus from time cap, progression, and fatigue.
  * Deterministic: same inputs → same stimulus decision.
  */
 export function decideStimulus(params: {
   timeCapMinutes: number;
-  goal: "strength" | "endurance" | "mixed" | "skill";
   progression: ProgressionOutput;
   fatigueScore: number;
 }): StimulusDecision {
-  const { timeCapMinutes, goal, progression, fatigueScore } = params;
+  const { timeCapMinutes, progression, fatigueScore } = params;
   const highFatigue = fatigueScore > 0.7;
   const shortCap = timeCapMinutes <= 20;
   const longCap = timeCapMinutes >= 45;
@@ -54,62 +53,34 @@ export function decideStimulus(params: {
     };
   }
 
-  switch (goal) {
-    case "strength":
-      return {
-        stimulus: "strength_bias",
-        durationMinutes: shortCap ? 15 : mediumCap ? 25 : 35,
-        recommendedProtocol: "EMOM",
-        movementCount: 2,
-        intendedStimulusLabel: "Strength-bias; quality reps, then conditioning if time.",
-      };
-    case "skill":
-      return {
-        stimulus: "skill",
-        durationMinutes: shortCap ? 15 : mediumCap ? 20 : 30,
-        recommendedProtocol: "EMOM",
-        movementCount: 2,
-        intendedStimulusLabel: "Skill/technique focus; controlled intensity.",
-      };
-    case "endurance":
-      return {
-        stimulus: longCap ? "long_aerobic" : mediumCap ? "medium_metcon" : "short_metcon",
-        durationMinutes: shortCap ? 15 : mediumCap ? 25 : 40,
-        recommendedProtocol: "AMRAP",
-        movementCount: 3,
-        intendedStimulusLabel: longCap ? "Long aerobic; sustainable pace." : "Sustained effort; manage pace.",
-      };
-    case "mixed":
-    default: {
-      const targetLong = progression.targetDuration === "long";
-      const duration = shortCap
-        ? progression.targetDuration === "short"
-          ? 10
-          : 15
-        : longCap
-          ? targetLong ? 40 : 30
-          : targetLong ? 28 : 20;
-      const stimulus: StimulusType = shortCap
-        ? "sprint"
-        : duration >= 30
-          ? "long_aerobic"
-          : duration >= 22
-            ? "medium_metcon"
-            : "short_metcon";
-      const recommendedProtocol =
-        shortCap ? "FOR_TIME" : duration >= 25 ? "AMRAP" : "AMRAP";
-      return {
-        stimulus,
-        durationMinutes: duration,
-        recommendedProtocol,
-        movementCount: 3,
-        intendedStimulusLabel:
-          stimulus === "sprint"
-            ? "Sprint; high intensity, short time domain."
-            : stimulus === "long_aerobic"
-              ? "Long aerobic; pacing and consistency."
-              : "Medium metcon; varied intensity.",
-      };
-    }
-  }
+  const targetLong = progression.targetDuration === "long";
+  const duration = shortCap
+    ? progression.targetDuration === "short"
+      ? 10
+      : 15
+    : longCap
+      ? targetLong ? 40 : 30
+      : targetLong ? 28 : 20;
+  const stimulus: StimulusType = shortCap
+    ? "sprint"
+    : duration >= 30
+      ? "long_aerobic"
+      : duration >= 22
+        ? "medium_metcon"
+        : "short_metcon";
+  // Intentionally never recommend 21_15_9: it focuses on speed, stamina, and cardio and should be used sparingly (user choice only).
+  const recommendedProtocol =
+    shortCap ? "FOR_TIME" : duration >= 25 ? "AMRAP" : "AMRAP";
+  return {
+    stimulus,
+    durationMinutes: duration,
+    recommendedProtocol,
+    movementCount: 3,
+    intendedStimulusLabel:
+      stimulus === "sprint"
+        ? "Sprint; high intensity, short time domain."
+        : stimulus === "long_aerobic"
+          ? "Long aerobic; pacing and consistency."
+          : "Medium metcon; varied intensity.",
+  };
 }

@@ -8,7 +8,6 @@ import { useAudioFeedback } from '../../features/timer/useAudioFeedback';
 import {
   parseTimerConfig,
   formatTime,
-  needsRoundCounter,
   getPhaseBadge,
   getRoundLabel,
 } from '../../features/timer/timerUtils';
@@ -51,7 +50,7 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
   const timerStartRef = useRef(timer.start);
   timerStartRef.current = timer.start;
 
-  const showRoundCounter = needsRoundCounter(config.type);
+  const showRoundCounter = config.showRoundCounter;
 
   // Fade-in the whole overlay after mount
   useEffect(() => {
@@ -106,10 +105,12 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
   }, [timer.status, stage]);
 
   const buildResult = useCallback((): WorkoutSessionResult => {
-    const isUserRounds = config.type === 'AMRAP' || config.type === 'FOR_TIME';
+    const roundsCompleted = config.showRoundCounter
+      ? (config.type === 'AMRAP' || config.type === 'FOR_TIME' ? roundCounterRef.current.rounds : config.totalRounds)
+      : 0;
     return {
       totalElapsed: timerRef.current.elapsed,
-      roundsCompleted: isUserRounds ? roundCounterRef.current.rounds : config.totalRounds,
+      roundsCompleted,
       config,
       workoutId: workout.id,
     };
@@ -182,7 +183,10 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
             {countdownNum}
           </div>
           <p className="text-sm text-ds-text-secondary">
-            {workout.wod.type} · {workout.wod.duration} min
+            {workout.wod.type}
+            {workout.wod.duration != null && workout.wod.duration > 0 && (
+              <> · {workout.wod.duration} min</>
+            )}
           </p>
         </div>
       )}
@@ -196,7 +200,9 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
               <p className="text-xs uppercase tracking-widest font-semibold text-ds-text-secondary">
                 {workout.wod.type}
               </p>
-              <p className="text-xs text-ds-text-muted">{workout.wod.duration} min</p>
+              {workout.wod.duration != null && workout.wod.duration > 0 && (
+                <p className="text-xs text-ds-text-muted">{workout.wod.duration} min</p>
+              )}
             </div>
             <button
               onClick={onEndWorkoutClick}

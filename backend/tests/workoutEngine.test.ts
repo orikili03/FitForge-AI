@@ -29,13 +29,12 @@ describe("WorkoutEngine", () => {
     new SimpleProgrammingAgent()
   );
 
-  it("generates a workout spec with warmup, wod, scaling, and intensity", () => {
-    const spec = engine.generate({
+  it("generates a workout spec with warmup, wod, scaling, and intensity", async () => {
+    const spec = await engine.generate({
       user,
       equipment: user.equipmentAccess,
       timeCapMinutes: 20,
       recentWorkouts: recent,
-      goal: "mixed",
       protocol: "recommended",
     });
 

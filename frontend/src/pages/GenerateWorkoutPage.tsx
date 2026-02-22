@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGenerateWorkout } from "../features/workouts/workoutApi";
 import { useEquipmentState } from "../features/equipment/equipmentApi";
+import { WodDetailCard, ScalingOptionsBlock } from "../components/wod";
+import { applyScaling } from "../utils/applyScaling";
 import {
   BUILTIN_PRESETS,
   EQUIPMENT_CATALOG,
@@ -46,7 +48,6 @@ const PROTOCOL_OPTIONS: { value: string; label: string }[] = [
 
 interface FormValues {
   duration: "quick" | "medium" | "full";
-  goal: "strength" | "endurance" | "mixed" | "skill";
   presetId: string;
   protocol: string;
 }
@@ -60,7 +61,6 @@ export function GenerateWorkoutPage() {
   const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
     defaultValues: {
       duration: "quick",
-      goal: "mixed",
       presetId: "none",
       protocol: "recommended",
     },
@@ -72,6 +72,7 @@ export function GenerateWorkoutPage() {
   const [customGearWeights, setCustomGearWeights] = useState<
     Record<string, { minWeight?: number; maxWeight?: number }>
   >({});
+  const [selectedScaling, setSelectedScaling] = useState<string[]>([]);
 
   const currentGearIdsKey = useMemo(() => {
     const builtin = BUILTIN_PRESETS.find((p) => p.id === selectedPresetId);
@@ -114,13 +115,20 @@ export function GenerateWorkoutPage() {
     }));
   };
 
+  const getPresetName = (presetId: string): string | undefined => {
+    const builtin = BUILTIN_PRESETS.find((p) => p.id === presetId);
+    if (builtin && builtin.id !== "custom") return builtin.name;
+    const custom = customPresets.find((p) => p.id === presetId);
+    return custom?.name;
+  };
+
   const onSubmit = (values: FormValues) => {
     generateMutation.mutate(
       {
         timeCapMinutes: DURATION_TO_MINUTES[values.duration],
         equipment: Array.from(includedGearIds),
-        goal: values.goal,
         protocol: values.protocol,
+        presetName: getPresetName(values.presetId),
       },
       {
         onSuccess: async () => {
@@ -132,6 +140,15 @@ export function GenerateWorkoutPage() {
   };
 
   const wod = generateMutation.data;
+
+  useEffect(() => {
+    if (wod?.id) setSelectedScaling([]);
+  }, [wod?.id]);
+
+  const displayWod = useMemo(() => {
+    if (!wod?.wod) return wod?.wod;
+    return applyScaling(wod.wod, selectedScaling);
+  }, [wod?.wod, selectedScaling]);
 
   const currentGear = useMemo(() => {
     const builtin = BUILTIN_PRESETS.find((p) => p.id === selectedPresetId);
@@ -358,18 +375,6 @@ export function GenerateWorkoutPage() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block mb-1">Primary goal</label>
-              <select
-                className="w-full rounded-[20px] border border-ds-border bg-ds-surface-subtle text-ds-text px-3 py-2"
-                {...register("goal")}
-              >
-                <option value="mixed">Mixed</option>
-                <option value="strength">Strength</option>
-                <option value="endurance">Endurance</option>
-                <option value="skill">Skill</option>
-              </select>
-            </div>
             <button
               type="submit"
               className="btn-primary w-full"
@@ -385,70 +390,46 @@ export function GenerateWorkoutPage() {
           </form>
         </div>
 
-        <div className="card min-w-0 overflow-hidden">
-          <h2 className="text-sm font-semibold mb-2 truncate">{wod ? "Workout blueprint" : "Result"}</h2>
+        <div className="min-w-0 overflow-hidden space-y-4">
           {!wod ? (
-            <p className="text-sm text-ds-text-muted break-words">
-              Choose equipment above, then generate a WOD to see the workout blueprint here.
-            </p>
+            <div className="card">
+              <p className="text-sm text-ds-text-muted break-words">
+                Choose equipment above, then generate a WOD to see the workout here.
+              </p>
+            </div>
           ) : (
-            <div className="space-y-4 text-sm min-w-0 break-words">
-              <div>
-                <div className="font-medium truncate">
-                  {wod.wod.type} • {wod.wod.duration} min
-                </div>
-                <p className="text-ds-text-muted mt-1 break-words">{wod.wod.description}</p>
-              </div>
-              <div>
-                <h3 className="text-xs uppercase tracking-wide text-ds-text-muted mb-1">
-                  Movements
-                </h3>
-                <ul className="list-disc list-inside break-words">
-                  {wod.wod.movements.map((m) => (
-                    <li key={m}>{m}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-xs uppercase tracking-wide text-ds-text-muted mb-1">
-                  Scaling
-                </h3>
-                <ul className="list-disc list-inside break-words">
-                  {wod.scalingOptions.map((s) => (
-                    <li key={s}>{s}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-xs uppercase tracking-wide text-ds-text-muted mb-1">
-                  Intensity
-                </h3>
-                <p className="break-words">{wod.intensityGuidance}</p>
-              </div>
-              {wod.intendedStimulus && (
-                <div>
-                  <h3 className="text-xs uppercase tracking-wide text-ds-text-muted mb-1">
-                    Intended stimulus
-                  </h3>
-                  <p className="break-words">{wod.intendedStimulus}</p>
-                </div>
-              )}
-              {wod.stimulusNote && (
-                <p className="text-ds-text-muted text-sm italic break-words">{wod.stimulusNote}</p>
-              )}
+            <>
               {wod.warmup && wod.warmup.length > 0 && (
-                <div>
-                  <h3 className="text-xs uppercase tracking-wide text-ds-text-muted mb-1">
-                    Warm-up
-                  </h3>
-                  <ul className="list-disc list-inside break-words">
+                <div className="rounded-ds-lg border border-ds-border bg-ds-surface-subtle p-ds-4">
+                  <p className="text-xs uppercase tracking-wider text-ds-text-muted font-medium mb-2">Warm-up</p>
+                  <ul className="space-y-1 text-sm text-ds-text">
                     {wod.warmup.map((s) => (
-                      <li key={s}>{s}</li>
+                      <li key={s} className="flex items-baseline gap-2">
+                        <span className="text-ds-text-muted">·</span>
+                        {s}
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
-            </div>
+              <WodDetailCard
+                wod={displayWod ?? wod.wod}
+                equipmentPresetName={wod.equipmentPresetName}
+              >
+                <div className="space-y-3 text-sm">
+                  {wod.stimulusNote && (
+                    <p className="text-ds-text-muted italic text-sm">{wod.stimulusNote}</p>
+                  )}
+                  {wod.scalingOptions.length > 0 && (
+                    <ScalingOptionsBlock
+                      scalingOptions={wod.scalingOptions}
+                      selectedLabels={selectedScaling}
+                      onSelectionChange={setSelectedScaling}
+                    />
+                  )}
+                </div>
+              </WodDetailCard>
+            </>
           )}
         </div>
       </div>

@@ -13,8 +13,8 @@ export interface WorkoutEngineInput {
   timeCapMinutes: number;
   recentWorkouts: WorkoutSpec[];
   fatigueScore?: number;
-  goal: "strength" | "endurance" | "mixed" | "skill";
   protocol: "recommended" | "EMOM" | "AMRAP" | "FOR_TIME" | "TABATA" | "DEATH_BY" | "21_15_9";
+  injuries?: string;
 }
 
 export class WorkoutEngine {
@@ -25,7 +25,7 @@ export class WorkoutEngine {
     private programmingAgent: ProgrammingAgent
   ) {}
 
-  generate(input: WorkoutEngineInput): WorkoutSpec {
+  async generate(input: WorkoutEngineInput): Promise<WorkoutSpec> {
     const assessment = this.assessmentAgent.assess({
       user: input.user,
       recentWorkouts: input.recentWorkouts,
@@ -42,13 +42,14 @@ export class WorkoutEngine {
       history: input.recentWorkouts,
     });
 
-    const spec = this.programmingAgent.program({
+    const spec = await this.programmingAgent.program({
       assessment,
       constraints,
       progression,
-      primaryGoal: input.goal,
       protocol: input.protocol,
       timeCapMinutes: input.timeCapMinutes,
+      equipmentAvailable: input.equipment,
+      injuries: input.injuries,
     });
 
     return spec;

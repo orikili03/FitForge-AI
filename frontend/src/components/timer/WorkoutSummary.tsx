@@ -4,7 +4,7 @@ import { CheckCircle, Clock, Layers, ChevronRight } from 'lucide-react';
 import { useCompleteWorkout } from '../../features/workouts/workoutApi';
 import { formatTime } from '../../features/timer/timerUtils';
 import type { WorkoutSessionResult } from '../../features/timer/timerTypes';
-import type { WorkoutResponse } from '../../features/workouts/workoutApi';
+import type { WorkoutResponse, WorkoutSpec } from '../../features/workouts/workoutApi';
 import { Button } from '../ui/Button';
 
 interface WorkoutSummaryProps {
@@ -19,11 +19,26 @@ export function WorkoutSummary({ workout, result, onClose }: WorkoutSummaryProps
   const queryClient = useQueryClient();
 
   const handleSave = () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7802/ingest/54cb5655-457e-439c-a4ef-8625152ae87b', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '65fbc5' }, body: JSON.stringify({ sessionId: '65fbc5', location: 'WorkoutSummary.tsx:handleSave', message: 'Save Workout clicked', data: { workoutId: workout.id, hasWod: !!workout.wod }, hypothesisId: 'H1_H2', timestamp: Date.now() }) }).catch(() => {});
+    // #endregion
+    const spec: WorkoutSpec = {
+      warmup: workout.warmup ?? [],
+      wod: workout.wod,
+      scalingOptions: workout.scalingOptions ?? [],
+      intensityGuidance: workout.intensityGuidance ?? '',
+      finisher: workout.finisher,
+      intendedStimulus: workout.intendedStimulus,
+      timeDomain: workout.timeDomain,
+      movementEmphasis: workout.movementEmphasis,
+      stimulusNote: workout.stimulusNote,
+    };
     completeMutation.mutate(
       {
         workoutId: workout.id,
         completionTime: Math.round(result.totalElapsed),
-        roundsOrReps: result.roundsCompleted,
+        roundsOrReps: result.roundsCompleted > 0 ? result.roundsCompleted : undefined,
+        spec,
       },
       {
         onSuccess: () => {
@@ -50,18 +65,20 @@ export function WorkoutSummary({ workout, result, onClose }: WorkoutSummaryProps
         </p>
       </div>
 
-      {/* Stats: total time and rounds completed */}
-      <div className="w-full grid grid-cols-2 gap-3">
+      {/* Stats: total time and rounds (only when relevant) */}
+      <div className={`w-full grid gap-3 ${result.roundsCompleted > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
         <StatBox
           icon={<Clock size={15} className="text-ds-text-muted" />}
           value={formatTime(Math.round(result.totalElapsed))}
           label="Total time"
         />
-        <StatBox
-          icon={<Layers size={15} className="text-ds-text-muted" />}
-          value={String(result.roundsCompleted)}
-          label="Rounds"
-        />
+        {result.roundsCompleted > 0 && (
+          <StatBox
+            icon={<Layers size={15} className="text-ds-text-muted" />}
+            value={String(result.roundsCompleted)}
+            label="Rounds"
+          />
+        )}
       </div>
 
       {/* RPE slider */}

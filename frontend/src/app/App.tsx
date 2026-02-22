@@ -9,6 +9,8 @@ import { ProfilePage } from "../pages/ProfilePage";
 import { TodayWodPage } from "../pages/TodayWodPage";
 import { WorkoutBuilderPage } from "../pages/WorkoutBuilderPage";
 import { EquipmentPage } from "../pages/EquipmentPage";
+import { DashboardPage } from "../pages/DashboardPage";
+import { AnalyticsPage } from "../pages/AnalyticsPage";
 import { useAuthToken } from "../contexts/AuthTokenContext";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -37,8 +39,10 @@ export default function App() {
         <Route path="wod/today" element={<TodayWodPage />} />
         <Route path="wod/generate" element={<GenerateWorkoutPage />} />
         <Route path="wod/builder" element={<WorkoutBuilderPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="equipment" element={<EquipmentPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="profile" element={<ProfilePage />} />
       </Route>
 

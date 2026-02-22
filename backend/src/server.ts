@@ -4,10 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 
 import { connectMongo } from "./infrastructure/database/mongoClient";
-import { authRouter } from "./interfaces/routes/authRoutes";
-import { userRouter } from "./interfaces/routes/userRoutes";
-import { workoutRouter } from "./interfaces/routes/workoutRoutes";
-import { analyticsRouter } from "./interfaces/routes/analyticsRoutes";
+import { authRouter, userRouter, workoutRouter, analyticsRouter } from "./composition";
 import { errorHandler } from "./interfaces/middleware/errorHandler";
 
 const app = express();
@@ -46,7 +43,7 @@ if (process.env.NODE_ENV !== "test") {
     })
     .catch((err) => {
       // eslint-disable-next-line no-console
-      console.error("Failed to connect to MongoDB", err);
+      console.error("Failed to start server", err);
       process.exit(1);
     });
 }

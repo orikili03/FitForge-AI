@@ -10,7 +10,8 @@ export interface WorkoutSpec {
   warmup: string[];
   wod: {
     type: string;
-    duration: number;
+    /** Only for time-capped protocols (AMRAP, EMOM, TABATA, Death By); null/undefined for For Time, 21-15-9, strength. */
+    duration?: number;
     description: string;
     movements: string[];
     /** Rounds (for RFT-style); undefined when not applicable. */
@@ -21,14 +22,16 @@ export interface WorkoutSpec {
   scalingOptions: string[];
   finisher?: string[];
   intensityGuidance: string;
-  /** Optional metadata for UX (e.g. "Sprint", "Long aerobic"). */
-  intendedStimulus?: string;
   /** Optional time domain (e.g. "<10 min", "10–20", "20+"). */
   timeDomain?: string;
   /** Optional movement emphasis tags. */
   movementEmphasis?: string[];
   /** Short stimulus/strategy note (CrossFit-style). */
   stimulusNote?: string;
+  /** Preset name used when generating (e.g. "Home/Garage", "Travel"). */
+  equipmentPresetName?: string;
+  /** Equipment IDs used for this workout (for display and scaling alignment). */
+  equipmentUsed?: string[];
 }
 
 export interface WorkoutProps {

@@ -38,9 +38,11 @@ export interface ProgrammingInput {
   assessment: AssessmentOutput;
   constraints: ConstraintOutput;
   progression: ProgressionOutput;
-  primaryGoal: "strength" | "endurance" | "mixed" | "skill";
   protocol: "recommended" | "EMOM" | "AMRAP" | "FOR_TIME" | "TABATA" | "DEATH_BY" | "21_15_9";
   timeCapMinutes: number;
+  /** User's equipment IDs (e.g. barbell, kettlebells) for prescribing equipment in movement names */
+  equipmentAvailable?: string[];
+  injuries?: string;
 }
 
 export interface AssessmentAgent {
@@ -56,6 +58,6 @@ export interface ProgressionAgent {
 }
 
 export interface ProgrammingAgent {
-  program(input: ProgrammingInput): WorkoutSpec;
+  program(input: ProgrammingInput): Promise<WorkoutSpec>;
 }
 

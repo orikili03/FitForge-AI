@@ -7,7 +7,7 @@ import {
 } from "../../domain/repositories/UserRepository";
 import { User } from "../../domain/entities/User";
 
-export class PrismaUserRepository implements UserRepository {
+export class MongooseUserRepository implements UserRepository {
   async findById(id: string): Promise<User | null> {
     const record = await UserModel.findById(id).exec();
     return record ? this.toDomain(record) : null;
@@ -92,4 +92,3 @@ export class PrismaUserRepository implements UserRepository {
     });
   }
 }
-

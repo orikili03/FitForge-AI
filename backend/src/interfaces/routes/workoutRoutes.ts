@@ -1,14 +1,9 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/authMiddleware";
-import { PrismaUserRepository } from "../../infrastructure/repositories/PrismaUserRepository";
-import { PrismaWorkoutRepository } from "../../infrastructure/repositories/PrismaWorkoutRepository";
+import { rateLimitGenerate } from "../middleware/rateLimitGenerate";
+import { UserRepository } from "../../domain/repositories/UserRepository";
+import { WorkoutRepository } from "../../domain/repositories/WorkoutRepository";
 import { WorkoutEngine } from "../../domain/services/WorkoutEngine";
-import {
-  SimpleAssessmentAgent,
-  SimpleConstraintAgent,
-  SimpleProgressionAgent,
-  SimpleProgrammingAgent,
-} from "../../domain/services/impl/SimpleAgents";
 import {
   CompleteWorkoutUseCase,
   GenerateWorkoutUseCase,
@@ -16,25 +11,22 @@ import {
 } from "../../application/useCases/WorkoutUseCases";
 import { WorkoutController } from "../controllers/workoutController";
 
-const router = Router();
+export interface WorkoutRouterDeps {
+  userRepo: UserRepository;
+  workoutRepo: WorkoutRepository;
+  engine: WorkoutEngine;
+}
 
-const userRepo = new PrismaUserRepository();
-const workoutRepo = new PrismaWorkoutRepository();
-const engine = new WorkoutEngine(
-  new SimpleAssessmentAgent(),
-  new SimpleConstraintAgent(),
-  new SimpleProgressionAgent(),
-  new SimpleProgrammingAgent()
-);
-
-const generateUseCase = new GenerateWorkoutUseCase(userRepo, workoutRepo, engine);
-const listHistoryUseCase = new ListWorkoutHistoryUseCase(workoutRepo);
-const completeUseCase = new CompleteWorkoutUseCase(workoutRepo);
-const controller = new WorkoutController(generateUseCase, listHistoryUseCase, completeUseCase);
-
-router.post("/generate", authMiddleware, controller.generate);
-router.get("/history", authMiddleware, controller.history);
-router.post("/complete", authMiddleware, controller.complete);
-
-export { router as workoutRouter };
+export function createWorkoutRouter(deps: WorkoutRouterDeps): Router {
+  const { userRepo, workoutRepo, engine } = deps;
+  const router = Router();
+  const generateUseCase = new GenerateWorkoutUseCase(userRepo, workoutRepo, engine);
+  const listHistoryUseCase = new ListWorkoutHistoryUseCase(workoutRepo);
+  const completeUseCase = new CompleteWorkoutUseCase(workoutRepo);
+  const controller = new WorkoutController(generateUseCase, listHistoryUseCase, completeUseCase);
+  router.post("/generate", rateLimitGenerate, authMiddleware, controller.generate);
+  router.get("/history", authMiddleware, controller.history);
+  router.post("/complete", authMiddleware, controller.complete);
+  return router;
+}
 

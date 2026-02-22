@@ -1,11 +1,14 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/authMiddleware";
+import { WorkoutRepository } from "../../domain/repositories/WorkoutRepository";
+import { GetProgressUseCase } from "../../application/useCases/GetProgressUseCase";
 import { AnalyticsController } from "../controllers/analyticsController";
 
-const router = Router();
-const controller = new AnalyticsController();
-
-router.get("/progress", authMiddleware, controller.progress);
-
-export { router as analyticsRouter };
+export function createAnalyticsRouter(workoutRepo: WorkoutRepository): Router {
+  const router = Router();
+  const getProgressUseCase = new GetProgressUseCase(workoutRepo);
+  const controller = new AnalyticsController(getProgressUseCase);
+  router.get("/progress", authMiddleware, controller.progress);
+  return router;
+}
 

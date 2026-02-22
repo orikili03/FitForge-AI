@@ -14,6 +14,11 @@ interface AuthResponse {
   token: string;
 }
 
+function getApiErrorMessage(err: unknown, fallback: string): string {
+  const data = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data;
+  return data?.error?.message ?? fallback;
+}
+
 export function useLogin() {
   return useMutation<AuthResponse, Error, AuthPayload>({
     mutationFn: async (payload) => {
@@ -21,10 +26,7 @@ export function useLogin() {
         const res = await apiClient.post("/auth/login", payload);
         return res.data.data;
       } catch (err: unknown) {
-        const data = (err as { response?: { data?: { error?: { message?: string } } } })
-          ?.response?.data;
-        const msg = data?.error?.message ?? "Unable to sign in. Please try again.";
-        throw new Error(msg);
+        throw new Error(getApiErrorMessage(err, "Unable to sign in. Please try again."));
       }
     },
   });
@@ -37,12 +39,9 @@ export function useRegister() {
         const res = await apiClient.post("/auth/register", payload);
         return res.data.data;
       } catch (err: unknown) {
-        const data = (err as { response?: { data?: { error?: { message?: string } } } })
-          ?.response?.data;
-        const msg =
-          data?.error?.message ??
-          "Unable to create account. Check your connection and try again.";
-        throw new Error(msg);
+        throw new Error(
+          getApiErrorMessage(err, "Unable to create account. Check your connection and try again.")
+        );
       }
     },
   });

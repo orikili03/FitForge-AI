@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-
-const STORAGE_KEY = "wodlab_token";
+import { AUTH_STORAGE_KEY } from "../utils/authToken";
 
 type AuthTokenContextValue = {
   token: string | null;
@@ -13,22 +12,22 @@ const AuthTokenContext = React.createContext<AuthTokenContextValue | null>(null)
 export function AuthTokenProvider({ children }: { children: React.ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
-    return localStorage.getItem(STORAGE_KEY);
+    return localStorage.getItem(AUTH_STORAGE_KEY);
   });
 
   useEffect(() => {
     if (!token) return;
-    localStorage.setItem(STORAGE_KEY, token);
+    localStorage.setItem(AUTH_STORAGE_KEY, token);
   }, [token]);
 
   const setToken = useCallback((value: string) => {
     setTokenState(value);
-    localStorage.setItem(STORAGE_KEY, value);
+    localStorage.setItem(AUTH_STORAGE_KEY, value);
   }, []);
 
   const clearToken = useCallback(() => {
     setTokenState(null);
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(AUTH_STORAGE_KEY);
   }, []);
 
   const value: AuthTokenContextValue = { token, setToken, clearToken };

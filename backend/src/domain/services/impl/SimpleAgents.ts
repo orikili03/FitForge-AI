@@ -3,10 +3,12 @@ import { WorkoutSpec, type MovementItemSpec } from "../../entities/Workout";
 import { getMovementsForEquipment } from "../../config/equipmentMovementMap";
 import { computeRecentExposure, getDomain } from "../../config/movementTags";
 import { getScalingForMovements } from "../../config/scalingRules";
+import { MOVEMENTS_BY_DOMAIN } from "../../config/movementCatalog";
 import {
-  MOVEMENTS_BY_DOMAIN,
-  getSuggestedWeight as getWeightFromCatalog,
-} from "../../config/movementCatalog";
+  getPrescriptionName,
+  getPrescriptionWeight,
+} from "../../config/movementPrescription";
+import { expandForDisplay } from "../../config/abbreviations";
 import { decideStimulus } from "../../config/stimulusEngine";
 import { selectBalancedMovements } from "../../config/patternBalance";
 import {
@@ -72,21 +74,28 @@ export class SimpleProgressionAgent implements ProgressionAgent {
 }
 
 export class SimpleProgrammingAgent implements ProgrammingAgent {
-  program(input: ProgrammingInput): WorkoutSpec {
-    const { primaryGoal, assessment, constraints, progression } = input;
+  async program(input: ProgrammingInput): Promise<WorkoutSpec> {
+    const { assessment, constraints, progression } = input;
 
-    // Stimulus-driven: decide duration, protocol, movement count from goal + fatigue + time cap
     const stimulusDecision = decideStimulus({
       timeCapMinutes: input.timeCapMinutes,
-      goal: primaryGoal,
       progression,
       fatigueScore: assessment.fatigueScore,
     });
 
-    const duration = stimulusDecision.durationMinutes;
-    const movementCount = Math.min(3, Math.max(2, stimulusDecision.movementCount));
+    const effectiveProtocol =
+      input.protocol !== "recommended"
+        ? input.protocol
+        : stimulusDecision.recommendedProtocol;
 
-    const pool = this.pickMovementPool(primaryGoal);
+    const duration = stimulusDecision.durationMinutes;
+    // 21-15-9: limit to 1–3 movements (focus on speed, stamina, cardio); default 2 for classic structure
+    const movementCount =
+      effectiveProtocol === "21_15_9"
+        ? Math.min(3, Math.max(1, 2))
+        : Math.min(3, Math.max(2, stimulusDecision.movementCount));
+
+    const pool = this.pickMovementPool();
     const allowed = pool.filter((m) => constraints.allowedMovements.includes(m));
     const fallbackPool = [
       ...MOVEMENTS_BY_DOMAIN.strength,
@@ -100,11 +109,6 @@ export class SimpleProgrammingAgent implements ProgrammingAgent {
       progression.recentExposure,
       movementCount
     );
-
-    const effectiveProtocol =
-      input.protocol !== "recommended"
-        ? input.protocol
-        : stimulusDecision.recommendedProtocol;
     const type = this.protocolToDisplayType(effectiveProtocol);
 
     const intensityGuidance =
@@ -113,36 +117,37 @@ export class SimpleProgrammingAgent implements ProgrammingAgent {
         : "Aim for high intensity, but keep mechanics sound.";
 
     const timeDomain = this.deriveTimeDomain(duration, input.timeCapMinutes);
-    const intendedStimulus = stimulusDecision.intendedStimulusLabel;
-    const movementEmphasis = [...movements];
+    const equipment = input.equipmentAvailable ?? [];
+    const movementNamesAbbrev = movements.map((m) => getPrescriptionName(m, equipment));
+    const movementEmphasis = [...movementNamesAbbrev];
     const { description, stimulusNote } = this.buildWodDescription(
       type,
       duration,
       effectiveProtocol,
-      movements,
-      primaryGoal,
+      movementNamesAbbrev,
       assessment.fatigueScore
     );
     const { rounds, movementItems } = this.buildMovementItems(
       effectiveProtocol,
       duration,
-      movements
+      movements,
+      equipment
     );
-    const warmup = this.suggestWarmup(movements);
-
+    const movementNames = movements.map((m) => getPrescriptionName(m, equipment));
+    const timeCappedProtocols = ["AMRAP", "EMOM", "TABATA", "DEATH_BY"];
+    const hasDuration = timeCappedProtocols.includes(effectiveProtocol);
     return {
-      warmup,
+      warmup: [], // warmups disabled for now
       wod: {
         type,
-        duration,
+        ...(hasDuration && { duration }),
         description,
-        movements,
+        movements: movementNames,
         rounds,
         movementItems,
       },
-      scalingOptions: getScalingForMovements(movements),
+      scalingOptions: getScalingForMovements(movements, input.equipmentAvailable ?? []),
       intensityGuidance,
-      intendedStimulus,
       timeDomain,
       movementEmphasis,
       stimulusNote,
@@ -166,22 +171,22 @@ export class SimpleProgrammingAgent implements ProgrammingAgent {
     return suggestions;
   }
 
-  /** Build rounds (when applicable) and movementItems with reps and optional weight. */
+  /** Build rounds (when applicable) and movementItems with reps, equipment, and weight (abbreviated names). */
   private buildMovementItems(
     protocol: ProgrammingInput["protocol"],
     duration: number,
-    movements: string[]
+    movements: string[],
+    equipmentAvailable: string[]
   ): { rounds?: number; movementItems: MovementItemSpec[] } {
-    const fmt = (m: string) =>
-      m.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-    const weight = (m: string) => getWeightFromCatalog(m);
+    const name = (m: string) => getPrescriptionName(m, equipmentAvailable);
+    const weight = (m: string) => getPrescriptionWeight(m);
 
-    if (protocol === "21_15_9" && movements.length >= 2) {
+    if (protocol === "21_15_9" && movements.length >= 1) {
       const repsScheme = [21, 15, 9];
       return {
         movementItems: movements.slice(0, 3).map((m, i) => ({
           reps: repsScheme[i] ?? 9,
-          name: fmt(m),
+          name: name(m),
           weight: weight(m),
         })),
       };
@@ -191,7 +196,7 @@ export class SimpleProgrammingAgent implements ProgrammingAgent {
       return {
         movementItems: movements.map((m, i) => ({
           reps: reps[i] ?? 10,
-          name: fmt(m),
+          name: name(m),
           weight: weight(m),
         })),
       };
@@ -201,7 +206,7 @@ export class SimpleProgrammingAgent implements ProgrammingAgent {
       return {
         movementItems: movements.slice(0, 2).map((m, i) => ({
           reps: reps[i] ?? 8,
-          name: fmt(m),
+          name: name(m),
           weight: weight(m),
         })),
       };
@@ -217,7 +222,7 @@ export class SimpleProgrammingAgent implements ProgrammingAgent {
         rounds,
         movementItems: movements.map((m, i) => ({
           reps: reps[i] ?? 15,
-          name: fmt(m),
+          name: name(m),
           weight: weight(m),
         })),
       };
@@ -225,42 +230,40 @@ export class SimpleProgrammingAgent implements ProgrammingAgent {
     return {
       movementItems: movements.map((m) => ({
         reps: 10,
-        name: fmt(m),
+        name: name(m),
         weight: weight(m),
       })),
     };
   }
 
-  /** CrossFit-style simple WOD: clear rep scheme, 2–3 movements, short stimulus note. */
+  /** CrossFit-style simple WOD: clear rep scheme, 2–3 movements, short stimulus note. Uses expanded names for display. */
   private buildWodDescription(
     type: string,
     duration: number,
     protocol: ProgrammingInput["protocol"],
-    movements: string[],
-    goal: ProgrammingInput["primaryGoal"],
+    movementNamesAbbrev: string[],
     fatigueScore: number
   ): { description: string; stimulusNote: string } {
-    const fmt = (m: string) =>
-      m.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-    const m1 = movements[0] ? fmt(movements[0]) : "";
-    const m2 = movements[1] ? fmt(movements[1]) : "";
-    const m3 = movements[2] ? fmt(movements[2]) : "";
+    const m1 = movementNamesAbbrev[0] ? expandForDisplay(movementNamesAbbrev[0]) : "";
+    const m2 = movementNamesAbbrev[1] ? expandForDisplay(movementNamesAbbrev[1]) : "";
+    const m3 = movementNamesAbbrev[2] ? expandForDisplay(movementNamesAbbrev[2]) : "";
 
+    const n = movementNamesAbbrev.length;
     let description: string;
-    if (protocol === "21_15_9" && movements.length >= 2) {
+    if (protocol === "21_15_9" && n >= 1) {
       description = `21-15-9 reps for time: ${m1}, ${m2}${m3 ? `, ${m3}` : ""}`;
     } else if (protocol === "AMRAP") {
-      const reps = movements.length === 3 ? [5, 10, 15] : movements.length === 2 ? [10, 15] : [10];
-      const parts = movements.map((m, i) => `${reps[i] ?? 10} ${fmt(m)}`).join(", ");
+      const reps = n === 3 ? [5, 10, 15] : n === 2 ? [10, 15] : [10];
+      const parts = movementNamesAbbrev.map((m, i) => `${reps[i] ?? 10} ${expandForDisplay(m)}`).join(", ");
       description = `AMRAP ${duration} min: ${parts}`;
     } else if (protocol === "EMOM") {
-      const reps = movements.length === 3 ? [5, 8, 10] : [8, 10];
-      const parts = movements.slice(0, 2).map((m, i) => `${reps[i]} ${fmt(m)}`).join(", ");
+      const reps = n === 3 ? [5, 8, 10] : [8, 10];
+      const parts = movementNamesAbbrev.slice(0, 2).map((m, i) => `${reps[i]} ${expandForDisplay(m)}`).join(", ");
       description = `EMOM ${duration} min: ${parts}`;
     } else if (protocol === "FOR_TIME" || protocol === "TABATA" || protocol === "DEATH_BY") {
       const rounds = duration <= 15 ? 2 : duration <= 25 ? 3 : 4;
-      const reps = movements.length === 3 ? [10, 15, 20] : movements.length === 2 ? [12, 18] : [15];
-      const parts = movements.map((m, i) => `${reps[i]} ${fmt(m)}`).join(", ");
+      const reps = n === 3 ? [10, 15, 20] : n === 2 ? [12, 18] : [15];
+      const parts = movementNamesAbbrev.map((m, i) => `${reps[i]} ${expandForDisplay(m)}`).join(", ");
       description = `${rounds} rounds for time: ${parts}`;
     } else {
       description = `${type} ${duration} min: ${[m1, m2, m3].filter(Boolean).join(", ")}`;
@@ -281,22 +284,12 @@ export class SimpleProgrammingAgent implements ProgrammingAgent {
     return "20+ min";
   }
 
-  private pickMovementPool(goal: ProgrammingInput["primaryGoal"]): string[] {
-    switch (goal) {
-      case "strength":
-        return [...MOVEMENTS_BY_DOMAIN.strength];
-      case "skill":
-        return [...MOVEMENTS_BY_DOMAIN.gymnastics];
-      case "endurance":
-        return [...MOVEMENTS_BY_DOMAIN.monostructural];
-      case "mixed":
-      default:
-        return [
-          ...MOVEMENTS_BY_DOMAIN.strength,
-          ...MOVEMENTS_BY_DOMAIN.gymnastics,
-          ...MOVEMENTS_BY_DOMAIN.monostructural,
-        ];
-    }
+  private pickMovementPool(): string[] {
+    return [
+      ...MOVEMENTS_BY_DOMAIN.strength,
+      ...MOVEMENTS_BY_DOMAIN.gymnastics,
+      ...MOVEMENTS_BY_DOMAIN.monostructural,
+    ];
   }
 
   private protocolToDisplayType(

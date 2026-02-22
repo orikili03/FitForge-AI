@@ -2,17 +2,19 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Card } from "./Card";
 import { Button } from "./Button";
+import { expandForDisplay } from "../../utils/abbreviations";
 
-export interface WorkoutCardWod {
+export interface SummaryWorkoutCardWod {
   type: string;
-  duration: number;
+  /** Only for time-capped protocols (AMRAP, EMOM, TABATA, Death By). */
+  duration?: number;
   description: string;
   movements: string[];
 }
 
-export interface WorkoutCardProps {
+export interface SummaryWorkoutCardProps {
   title: string;
-  wod: WorkoutCardWod;
+  wod: SummaryWorkoutCardWod;
   movementPreviewCount?: number;
   primaryActionLabel?: string;
   primaryActionHref?: string;
@@ -20,7 +22,8 @@ export interface WorkoutCardProps {
   className?: string;
 }
 
-export function WorkoutCard({
+/** Summary-style card with title, movement preview, and primary action (e.g. Dashboard). */
+export function SummaryWorkoutCard({
   title,
   wod,
   movementPreviewCount = 4,
@@ -28,7 +31,7 @@ export function WorkoutCard({
   primaryActionHref,
   onPrimaryAction,
   className = "",
-}: WorkoutCardProps) {
+}: SummaryWorkoutCardProps) {
   const previewMovements = wod.movements.slice(0, movementPreviewCount);
   const hasMore = wod.movements.length > movementPreviewCount;
 
@@ -52,7 +55,7 @@ export function WorkoutCard({
             {previewMovements.map((m) => (
               <li key={m} className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-ds-accent/80" />
-                {m}
+                {expandForDisplay(m)}
               </li>
             ))}
             {hasMore && (
@@ -62,10 +65,12 @@ export function WorkoutCard({
             )}
           </ul>
         </div>
-        <div className="mt-ds-2 flex items-center gap-2 text-ds-body-sm text-ds-text-muted">
-          <span>Time cap</span>
-          <span className="font-semibold text-ds-text">{wod.duration} min</span>
-        </div>
+        {wod.duration != null && wod.duration > 0 && (
+          <div className="mt-ds-2 flex items-center gap-2 text-ds-body-sm text-ds-text-muted">
+            <span>Time cap</span>
+            <span className="font-semibold text-ds-text">{wod.duration} min</span>
+          </div>
+        )}
       </div>
       <div className="mt-ds-3 border-t border-ds-border pt-ds-3">
         {primaryActionHref ? (

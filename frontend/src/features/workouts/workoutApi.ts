@@ -12,7 +12,7 @@ export interface WorkoutSpec {
   warmup: string[];
   wod: {
     type: string;
-    duration: number;
+    duration?: number;
     description: string;
     movements: string[];
     rounds?: number;
@@ -25,6 +25,8 @@ export interface WorkoutSpec {
   timeDomain?: string;
   movementEmphasis?: string[];
   stimulusNote?: string;
+  equipmentPresetName?: string;
+  equipmentUsed?: string[];
 }
 
 export interface WorkoutResponse extends WorkoutSpec {
@@ -33,6 +35,8 @@ export interface WorkoutResponse extends WorkoutSpec {
   type: string;
   durationMinutes: number;
   completed?: boolean;
+  completionTime?: number;
+  roundsOrReps?: number;
   timeDomain?: string;
 }
 
@@ -40,13 +44,15 @@ export interface CompleteWorkoutPayload {
   workoutId: string;
   completionTime?: number;
   roundsOrReps?: number;
+  /** Scaled spec as performed; when sent, history will show this version. */
+  spec?: WorkoutSpec;
 }
 
 export function useGenerateWorkout() {
   return useMutation<
     WorkoutResponse,
     Error,
-    { timeCapMinutes: number; equipment: string[]; goal: "strength" | "endurance" | "mixed" | "skill"; protocol: string }
+    { timeCapMinutes: number; equipment: string[]; protocol: string; injuries?: string; presetName?: string }
   >({
     mutationFn: async (payload) => {
       const res = await apiClient.post("/workouts/generate", payload);
@@ -68,7 +74,17 @@ export function useWorkoutHistory() {
 export function useCompleteWorkout() {
   return useMutation<void, Error, CompleteWorkoutPayload>({
     mutationFn: async (payload) => {
-      await apiClient.post("/workouts/complete", payload);
+      // #region agent log
+      fetch('http://127.0.0.1:7802/ingest/54cb5655-457e-439c-a4ef-8625152ae87b', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '65fbc5' }, body: JSON.stringify({ sessionId: '65fbc5', location: 'workoutApi.ts:complete', message: 'complete payload before POST', data: { workoutId: payload.workoutId, completionTime: payload.completionTime, hasSpec: !!payload.spec }, hypothesisId: 'H3_H5', timestamp: Date.now() }) }).catch(() => {});
+      // #endregion
+      try {
+        await apiClient.post("/workouts/complete", payload);
+      } catch (err: unknown) {
+        // #region agent log
+        fetch('http://127.0.0.1:7802/ingest/54cb5655-457e-439c-a4ef-8625152ae87b', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '65fbc5' }, body: JSON.stringify({ sessionId: '65fbc5', location: 'workoutApi.ts:complete', message: 'complete POST failed', data: { error: String(err), status: (err as { response?: { status?: number } })?.response?.status }, hypothesisId: 'H3_H5', timestamp: Date.now() }) }).catch(() => {});
+        // #endregion
+        throw err;
+      }
     },
   });
 }

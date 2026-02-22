@@ -1,3 +1,5 @@
+import { expandForDisplay } from "../../utils/abbreviations";
+
 /**
  * Parses movement string for optional weight/distance (e.g. "deadlift @ 60kg", "box jump @ 0.6m").
  */
@@ -18,13 +20,6 @@ function parseMovement(
   return { name: item };
 }
 
-function formatMovementName(name: string): string {
-  return name
-    .split(" ")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
-}
-
 export interface MovementListProps {
   /** Movement strings or objects with optional weight/distance */
   movements: (string | { name: string; weight?: string; distance?: string })[];
@@ -42,18 +37,20 @@ export function MovementList({ movements, className = "" }: MovementListProps) {
       <ul className="space-y-2">
         {movements.map((item, i) => {
           const { name, weight, distance } = parseMovement(item);
-          const displayName = formatMovementName(name);
+          const displayName = expandForDisplay(name);
+          const mainText = distance && !weight
+            ? `${distance} ${displayName}`
+            : displayName;
           return (
             <li
               key={`${name}-${i}`}
               className="flex items-baseline gap-2 text-ds-body text-ds-text"
             >
               <span className="h-1.5 w-1.5 shrink-0 mt-1.5 rounded-full bg-ds-accent/90" />
-              <span className="flex-1">{displayName}</span>
-              {(weight || distance) && (
+              <span className="flex-1">{mainText}</span>
+              {weight && (
                 <span className="text-ds-body-sm text-ds-text-muted shrink-0">
-                  {weight && `@ ${weight}`}
-                  {distance && !weight && `@ ${distance}`}
+                  @ {weight}
                 </span>
               )}
             </li>

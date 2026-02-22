@@ -5,7 +5,7 @@ import {
 } from "../../domain/repositories/WorkoutRepository";
 import { Workout, WorkoutSpec } from "../../domain/entities/Workout";
 
-export class PrismaWorkoutRepository implements WorkoutRepository {
+export class MongooseWorkoutRepository implements WorkoutRepository {
   async createGeneratedWorkout(params: {
     userId: string;
     type: string;
@@ -19,6 +19,11 @@ export class PrismaWorkoutRepository implements WorkoutRepository {
       generatedSpec: params.spec as any,
     });
     return this.toDomain(record);
+  }
+
+  async findById(id: string): Promise<Workout | null> {
+    const record = await WorkoutModel.findById(id).exec();
+    return record ? this.toDomain(record) : null;
   }
 
   async listHistory(userId: string, limit = 20): Promise<Workout[]> {
@@ -40,6 +45,27 @@ export class PrismaWorkoutRepository implements WorkoutRepository {
     return new Set(completions.map((c) => c.workoutId));
   }
 
+  async getCompletionDataForWorkouts(
+    workoutIds: string[]
+  ): Promise<Map<string, { completionTime?: number; roundsOrReps?: number }>> {
+    if (workoutIds.length === 0) return new Map();
+    const completions = await WorkoutCompletionModel.find({
+      workoutId: { $in: workoutIds },
+    })
+      .select("workoutId completionTime roundsOrReps")
+      .lean()
+      .exec();
+    const map = new Map<string, { completionTime?: number; roundsOrReps?: number }>();
+    for (const c of completions) {
+      const id = String(c.workoutId);
+      map.set(id, {
+        completionTime: c.completionTime ?? undefined,
+        roundsOrReps: c.roundsOrReps ?? undefined,
+      });
+    }
+    return map;
+  }
+
   async recordCompletion(params: {
     workoutId: string;
     data: WorkoutCompletionData;
@@ -49,6 +75,29 @@ export class PrismaWorkoutRepository implements WorkoutRepository {
       completionTime: params.data.completionTime,
       roundsOrReps: params.data.roundsOrReps,
     });
+  }
+
+  async updateSpec(workoutId: string, spec: WorkoutSpec): Promise<void> {
+    await WorkoutModel.findByIdAndUpdate(
+      workoutId,
+      { generatedSpec: spec as any },
+      { new: true }
+    ).exec();
+  }
+
+  async getProgressPoints(userId: string): Promise<{ date: string; roundsOrReps: number | null }[]> {
+    const workouts = await WorkoutModel.find({ userId }).select("_id").exec();
+    const workoutIds = workouts.map((w) => w._id.toString());
+    const completions = await WorkoutCompletionModel.find({
+      workoutId: { $in: workoutIds },
+    })
+      .sort({ completedAt: 1 })
+      .lean()
+      .exec();
+    return completions.map((c) => ({
+      date: c.completedAt.toISOString(),
+      roundsOrReps: c.roundsOrReps ?? null,
+    }));
   }
 
   private toDomain(record: any): Workout {
@@ -62,4 +111,3 @@ export class PrismaWorkoutRepository implements WorkoutRepository {
     });
   }
 }
-

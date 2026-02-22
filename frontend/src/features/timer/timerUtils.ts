@@ -10,23 +10,20 @@ export function parseTimerConfig(workout: WorkoutResponse): TimerConfig {
   const durationSeconds = Math.max(60, workout.wod.duration * 60);
 
   if (typeStr.includes('TABATA')) {
-    // Classic Tabata: 8 rounds × (20s work + 10s rest) = 4 min
-    return { type: 'TABATA', totalRounds: 8, workSeconds: 20, restSeconds: 10, durationSeconds: 240 };
+    return { type: 'TABATA', totalRounds: 8, workSeconds: 20, restSeconds: 10, durationSeconds: 240, showRoundCounter: false };
   }
 
   if (typeStr.includes('EMOM')) {
-    // Each minute is one round
     const rounds = Math.max(1, workout.wod.duration);
-    return { type: 'EMOM', totalRounds: rounds, workSeconds: 60, restSeconds: 0, durationSeconds };
+    return { type: 'EMOM', totalRounds: rounds, workSeconds: 60, restSeconds: 0, durationSeconds, showRoundCounter: false };
   }
 
   if (typeStr.includes('AMRAP')) {
-    // Single countdown; user tracks rounds/reps manually
-    return { type: 'AMRAP', totalRounds: 0, workSeconds: 0, restSeconds: 0, durationSeconds };
+    return { type: 'AMRAP', totalRounds: 0, workSeconds: 0, restSeconds: 0, durationSeconds, showRoundCounter: true };
   }
 
-  // Default: For Time — count up, stop when done (time cap = duration)
-  return { type: 'FOR_TIME', totalRounds: 0, workSeconds: 0, restSeconds: 0, durationSeconds };
+  // For Time, chipper (21-15-9), EMOM-style, etc.: no round counter — only AMRAP uses it
+  return { type: 'FOR_TIME', totalRounds: 0, workSeconds: 0, restSeconds: 0, durationSeconds, showRoundCounter: false };
 }
 
 /**
@@ -115,11 +112,6 @@ export function formatTime(totalSeconds: number): string {
   const m = Math.floor(s / 60);
   const secs = s % 60;
   return `${m.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
-
-/** Whether this timer type uses a manual round counter (AMRAP / For Time) */
-export function needsRoundCounter(type: TimerConfig['type']): boolean {
-  return type === 'AMRAP' || type === 'FOR_TIME';
 }
 
 /** Label for the phase shown inside the ring */

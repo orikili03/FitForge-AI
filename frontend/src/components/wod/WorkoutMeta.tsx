@@ -2,7 +2,8 @@ import { ProtocolTooltip } from "./ProtocolTooltip";
 
 export interface WorkoutMetaProps {
   type: string;
-  durationMinutes: number;
+  /** Only for time-capped protocols; omit for For Time / 21-15-9. */
+  durationMinutes?: number;
   timeDomain?: string;
   className?: string;
 }
@@ -21,10 +22,14 @@ export function WorkoutMeta({
             {type}
           </ProtocolTooltip>
         </span>
-        <span className="text-ds-text-muted">·</span>
-        <span className="text-ds-body-sm font-medium text-ds-text-secondary">
-          {durationMinutes} min
-        </span>
+        {durationMinutes != null && durationMinutes > 0 && (
+          <>
+            <span className="text-ds-text-muted">·</span>
+            <span className="text-ds-body-sm font-medium text-ds-text-secondary">
+              {durationMinutes} min
+            </span>
+          </>
+        )}
         {timeDomain && (
           <>
             <span className="text-ds-text-muted">·</span>

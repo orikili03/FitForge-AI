@@ -6,12 +6,13 @@ import {
 } from "../../application/useCases/GetAndUpdateUser";
 import { updateUserSchema } from "../validators/userValidators";
 import { updateEquipmentSchema } from "../validators/equipmentValidators";
-import { PrismaUserRepository } from "../../infrastructure/repositories/PrismaUserRepository";
+import { UserRepository } from "../../domain/repositories/UserRepository";
 
 export class UserController {
   constructor(
     private getCurrentUser: GetCurrentUserUseCase,
-    private updateUserProfile: UpdateUserProfileUseCase
+    private updateUserProfile: UpdateUserProfileUseCase,
+    private userRepo: UserRepository
   ) {}
 
   me = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -39,10 +40,7 @@ export class UserController {
     try {
       const parsed = updateEquipmentSchema.parse(req.body);
       const userId = req.user!.userId;
-
-      // Keep this controller thin: delegate persistence to repository
-      const userRepo = new PrismaUserRepository();
-      const user = await userRepo.updateEquipment(userId, parsed);
+      const user = await this.userRepo.updateEquipment(userId, parsed);
 
       res.json({
         success: true,

@@ -37,7 +37,6 @@ describe("Auth and workout flow", () => {
       .send({
         timeCapMinutes: 20,
         equipment: ["barbell"],
-        goal: "mixed",
       })
       .expect(201);
 

@@ -1,8 +1,10 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   Flame,
+  LayoutDashboard,
   Sparkles,
   History,
+  BarChart3,
   Dumbbell,
   User,
   LogOut,
@@ -13,9 +15,11 @@ import { Logo } from "../Logo";
 
 const navItems = [
   { to: "/", label: "Today's WOD", icon: Flame, end: true },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, end: false },
   { to: "/wod/generate", label: "Generate", icon: Sparkles, end: false },
   { to: "/equipment", label: "Equipment", icon: Dumbbell, end: false },
   { to: "/history", label: "History", icon: History, end: false },
+  { to: "/analytics", label: "Analytics", icon: BarChart3, end: false },
   { to: "/profile", label: "Profile", icon: User, end: false },
 ];
 

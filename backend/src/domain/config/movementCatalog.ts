@@ -58,7 +58,7 @@ export function getSuggestedWeight(movementId: string): string | undefined {
 /** All movement IDs in a deterministic order (for pool iteration). */
 export const ALL_MOVEMENT_IDS = ENTRIES.map((e) => e.id);
 
-/** Movements by domain for goal-based pools. */
+/** Movements by domain for programming pools. */
 export const MOVEMENTS_BY_DOMAIN: Record<Domain, string[]> = {
   strength: ENTRIES.filter((e) => e.domain === "strength").map((e) => e.id),
   gymnastics: ENTRIES.filter((e) => e.domain === "gymnastics").map((e) => e.id),
