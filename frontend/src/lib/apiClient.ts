@@ -10,6 +10,15 @@ export const apiClient = axios.create({
     baseURL,
 });
 
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const message = error.response?.data?.error || error.message || "An unexpected error occurred";
+        error.message = message;
+        return Promise.reject(error);
+    }
+);
+
 apiClient.interceptors.request.use((config) => {
     const token = getAuthToken();
     if (token) {

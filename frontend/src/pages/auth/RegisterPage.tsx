@@ -51,6 +51,12 @@ export function RegisterPage() {
                     </p>
                 </div>
 
+                {registerMutation.isError && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-ds-md p-3 text-ds-caption text-red-500 text-center">
+                        {registerMutation.error.message}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
                     <div className="space-y-4">
                         <div>
