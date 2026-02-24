@@ -1,5 +1,5 @@
 import { Save, Sparkles, Trash2 } from "lucide-react";
-import { Button, Card } from "../components/ui";
+import { Button } from "../components/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useEquipmentState, useUpdateEquipment } from "../domains/equipment/hooks";
