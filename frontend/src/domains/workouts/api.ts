@@ -1,0 +1,53 @@
+import { z } from "zod";
+
+export const movementItemSpecSchema = z.object({
+    reps: z.number(),
+    name: z.string(),
+    weight: z.string().optional(),
+    distance: z.string().optional(),
+});
+
+export const workoutSpecSchema = z.object({
+    warmup: z.array(z.string()),
+    wod: z.object({
+        type: z.string(),
+        duration: z.number().optional(),
+        description: z.string(),
+        movements: z.array(z.string()),
+        rounds: z.number().optional(),
+        movementItems: z.array(movementItemSpecSchema).optional(),
+    }),
+    scalingOptions: z.array(z.string()),
+    finisher: z.array(z.string()).optional(),
+    intensityGuidance: z.string(),
+    intendedStimulus: z.string().optional(),
+    timeDomain: z.string().optional(),
+    movementEmphasis: z.array(z.string()).optional(),
+    stimulusNote: z.string().optional(),
+    equipmentPresetName: z.string().optional(),
+    equipmentUsed: z.array(z.string()).optional(),
+});
+
+export const workoutResponseSchema = workoutSpecSchema.extend({
+    id: z.string(),
+    date: z.string(),
+    type: z.string(),
+    durationMinutes: z.number(),
+    completed: z.boolean().optional(),
+    completionTime: z.number().optional(),
+    roundsOrReps: z.number().optional(),
+    timeDomain: z.string().optional(),
+});
+
+export type MovementItemSpec = z.infer<typeof movementItemSpecSchema>;
+export type WorkoutSpec = z.infer<typeof workoutSpecSchema>;
+export type WorkoutResponse = z.infer<typeof workoutResponseSchema>;
+
+export const completeWorkoutPayloadSchema = z.object({
+    workoutId: z.string(),
+    completionTime: z.number().optional(),
+    roundsOrReps: z.number().optional(),
+    spec: workoutSpecSchema.optional(),
+});
+
+export type CompleteWorkoutPayload = z.infer<typeof completeWorkoutPayloadSchema>;
