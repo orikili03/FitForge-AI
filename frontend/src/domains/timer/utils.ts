@@ -103,18 +103,18 @@ export function computeTimerState(elapsed: number, config: TimerConfig): Compute
                 isFinished,
             };
         }
+    }
 
-        // All other types (DEATH_BY, CHIPPER, LADDER, etc.) behave as count-up timers
-        default: {
-            const cap = config.durationSeconds;
-            const isFinished = cap > 0 && e >= cap;
-            return {
-                round: 1, phase: "WORK",
-                displaySeconds: e,
-                phaseProgress: cap > 0 ? Math.min(e / cap, 1) : 0,
-                isFinished,
-            };
-        }
+    // All other types (DEATH_BY, CHIPPER, LADDER, etc.) behave as count-up timers
+    default: {
+        const cap = config.durationSeconds;
+        const isFinished = cap > 0 && e >= cap;
+        return {
+            round: 1, phase: "WORK",
+            displaySeconds: e,
+            phaseProgress: cap > 0 ? Math.min(e / cap, 1) : 0,
+            isFinished,
+        };
     }
 }
 
