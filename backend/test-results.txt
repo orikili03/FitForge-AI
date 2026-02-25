@@ -1,7 +1,0 @@
-❌ Named spline (/:path*) failed: Missing parameter name at index 7: /:path*; visit https://git.new/pathToRegexpError for info
-❌ Named regex (/:path(.*)) failed: Missing parameter name at index 9: /:path(.*); visit https://git.new/pathToRegexpError for info
-✅ New syntax ({/*path}) success
-❌ Literal spline (/*) failed: Missing parameter name at index 2: /*; visit https://git.new/pathToRegexpError for info
-❌ Bare spline (*) failed: Missing parameter name at index 1: *; visit https://git.new/pathToRegexpError for info
-✅ Regex object (/.* /) success
-✅ API exclusion regex success
