@@ -1,5 +1,6 @@
 import { Workout } from "../models/Workout.js";
 import { Movement } from "../models/Movement.js";
+import { movementCacheService } from "./MovementCacheService.js";
 import type { FilteredMovement } from "./MovementFilterService.js";
 
 // ─── Variance Analysis Result ─────────────────────────────────────────────
@@ -44,24 +45,51 @@ export class VarianceCheckerService {
             .limit(this.MAX_LOOKBACK_WORKOUTS)
             .lean();
 
-        // Extract movement names from recent WODs
+        // Extract movement names from recent WODs using movementItems (cleaner than parsing strings)
         const recentMovementNames = new Set<string>();
         for (const w of recentWorkouts) {
-            for (const m of w.wod.movements) {
-                recentMovementNames.add(m.toLowerCase().trim());
+            if (w.wod.movementItems) {
+                for (const item of w.wod.movementItems) {
+                    recentMovementNames.add(item.name.trim());
+                }
+            } else {
+                // FALLBACK: Improve "Lossy" parsing for legacy/manual entries
+                // Instead of regex, we'll check if any movement name/abbreviation exists within the string
+                const allLibraryMovements = await movementCacheService.getAll();
+                for (const mStr of w.wod.movements) {
+                    const normalized = mStr.toLowerCase();
+                    const match = allLibraryMovements.find(lim =>
+                        normalized.includes(lim.name.toLowerCase()) ||
+                        (lim.abbreviation && normalized.includes(lim.abbreviation.toLowerCase()))
+                    );
+                    if (match) {
+                        recentMovementNames.add(match.name);
+                    }
+                }
             }
         }
 
+        if (recentMovementNames.size === 0) {
+            return {
+                recentFamilies: [],
+                recentModalities: [],
+                suggestedModality: null,
+                lookbackCount: recentWorkouts.length,
+            };
+        }
+
         // Look up movement families and modalities from the Movement collection
-        const movements = await Movement.find({
-            name: {
-                $in: Array.from(recentMovementNames).map(
-                    (n) => new RegExp(`^${n}$`, "i")
-                ),
-            },
-        })
-            .select("name family modality")
-            .lean();
+        // Since we have the full library in memory, we can robustly match variants
+        const allMovements = await movementCacheService.getAll();
+        const movements = allMovements.filter((m) => {
+            // Check if the base name, any variant, or any progression name matches
+            const nameMatch = recentMovementNames.has(m.name);
+            const variantMatch = m.variants?.some((v) => recentMovementNames.has(v));
+            const progressionMatch = m.progressions?.some((p) =>
+                recentMovementNames.has(p.variant)
+            );
+            return nameMatch || variantMatch || progressionMatch;
+        });
 
         const recentFamilies = [
             ...new Set(movements.map((m) => m.family).filter(Boolean) as string[]),

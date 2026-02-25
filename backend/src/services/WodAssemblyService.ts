@@ -7,7 +7,14 @@ export type WodProtocol =
     | "FOR_TIME"
     | "TABATA"
     | "DEATH_BY"
-    | "21_15_9";
+    | "21_15_9"
+    | "LADDER"
+    | "CHIPPER"
+    | "INTERVAL"
+    | "STRENGTH_SINGLE"
+    | "STRENGTH_SETS"
+    | "REST_DAY"
+    | "OTHER";
 
 export interface AssembledWod {
     type: string;
@@ -103,6 +110,50 @@ const TEMPLATES: Record<WodProtocol, TemplateConfig> = {
         description: (_dur, mvs) =>
             `21-15-9:\n${mvs.join("\n")}`,
     },
+    LADDER: {
+        movementCount: { min: 1, max: 2 },
+        repSchemes: [[2, 2]],
+        description: (dur, mvs) =>
+            `${dur}-Minute Ladder:\nStart with 2 reps of each. Increase by 2 reps every round.\n${mvs.join("\n")}`,
+    },
+    CHIPPER: {
+        movementCount: { min: 5, max: 8 },
+        repSchemes: [
+            [50, 40, 30, 20, 10],
+            [30, 30, 30, 30, 30, 30],
+            [100, 80, 60, 40, 20],
+        ],
+        description: (_dur, mvs) =>
+            `Chipper (Complete in order):\n${mvs.join("\n")}`,
+    },
+    INTERVAL: {
+        movementCount: { min: 2, max: 3 },
+        repSchemes: [[10, 10, 10]],
+        description: (dur, mvs) =>
+            `Intervals (${dur} min total):\nComplete each round every 5 minutes.\n${mvs.join("\n")}`,
+    },
+    STRENGTH_SINGLE: {
+        movementCount: { min: 1, max: 1 },
+        repSchemes: [[1]],
+        description: (_dur, mvs) =>
+            `Max Strength:\nFind a heavy 1-rep max for:\n${mvs.join("\n")}`,
+    },
+    STRENGTH_SETS: {
+        movementCount: { min: 1, max: 2 },
+        repSchemes: [[5], [5, 5]],
+        description: (_dur, mvs) =>
+            `Strength Sets:\n5 sets of 5 reps (Rest 2-3 mins):\n${mvs.join("\n")}`,
+    },
+    REST_DAY: {
+        movementCount: { min: 0, max: 0 },
+        repSchemes: [[]],
+        description: () => "Rest Day: Active recovery or total rest.",
+    },
+    OTHER: {
+        movementCount: { min: 1, max: 5 },
+        repSchemes: [[10, 10, 10, 10, 10]],
+        description: (_dur, mvs) => `Modular Workout:\n${mvs.join("\n")}`,
+    },
 };
 
 // ─── Stimulus Notes per Protocol ──────────────────────────────────────────
@@ -119,6 +170,20 @@ const STIMULUS_NOTES: Record<WodProtocol, string> = {
         "Start smooth. The early minutes should feel easy. The challenge is in the later rounds.",
     "21_15_9":
         "This is a sprint. Unbroken sets early, fast transitions. Aim for sub-10 minutes.",
+    LADDER:
+        "Focus on smooth transitions. The early sets will be very fast, but the volume builds quickly. Pace yourself.",
+    CHIPPER:
+        "A mental and physical test of stamina. Chip away at the large sets. Don't look at the whole list, just the movement in front of you.",
+    INTERVAL:
+        "Focus on consistent effort across intervals. Round times should be repeatable.",
+    STRENGTH_SINGLE:
+        "Focus on mechanics and absolute strength. Take full recovery between attempts.",
+    STRENGTH_SETS:
+        "Move the load with perfect form. Rest until you are fully ready for the next set.",
+    REST_DAY:
+        "Recovery is where the adaptation happens. Eat well and stay mobile.",
+    OTHER:
+        "Focus on the intended stimulus. Listen to your body.",
 };
 
 // ─── Warmup Generator ────────────────────────────────────────────────────
@@ -327,7 +392,7 @@ export class WodAssemblyService {
                 rounds,
                 movementItems,
             },
-            warmup: generateWarmup(selected),
+            warmup: [], // generateWarmup(selected),
             scalingOptions: generateScalingOptions(selected),
             intensityGuidance,
             intendedStimulus: `${timeDomain} — ${movementEmphasis
@@ -372,11 +437,11 @@ export class WodAssemblyService {
 
         // "Recommended" — pick based on duration
         if (durationMinutes <= 10) {
-            return pickRandom(["TABATA", "EMOM", "21_15_9"]);
+            return pickRandom(["TABATA", "EMOM", "21_15_9", "LADDER"]);
         } else if (durationMinutes <= 20) {
-            return pickRandom(["AMRAP", "EMOM", "FOR_TIME"]);
+            return pickRandom(["AMRAP", "EMOM", "FOR_TIME", "LADDER"]);
         } else {
-            return pickRandom(["AMRAP", "FOR_TIME"]);
+            return pickRandom(["AMRAP", "FOR_TIME", "CHIPPER"]);
         }
     }
 }

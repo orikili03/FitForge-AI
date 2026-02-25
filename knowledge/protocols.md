@@ -9,20 +9,20 @@ Classification and stimulus intent for CrossFit protocols. Use for **analyzing**
 
 ## Protocol Definitions
 
-| Protocol | Description | Typical Duration | Energy System | Use Case |
-|----------|-------------|------------------|---------------|----------|
-| **AMRAP** | As Many Rounds/Reps As Possible in a time cap | 8–25 min | Glycolytic / aerobic (by length) | Sustained effort; pacing; volume under time. |
-| **FOR_TIME** (RFT) | Complete prescribed work as fast as possible | 5–30 min | Phosphagen–glycolytic (short); glycolytic–aerobic (long) | Task-priority; clear finish line; benchmark retest. |
-| **EMOM** | Every Minute On the Minute — fixed work, rest with remaining time | 8–20 min | Mixed; quality-focused | Skill under fatigue; built-in rest; pacing. |
-| **TABATA** | 8 rounds of 20 sec work / 10 sec rest | 4 min | Phosphagen / glycolytic | Maximal effort; short, repeatable. |
-| **Death By** | Ascending ladder each minute until failure | 8–15 min | Glycolytic | Pacing; mental toughness; clear failure point. |
-| **21-15-9** | Descending rep scheme for 2–3 movements, for time | 5–12 min | Phosphagen–glycolytic | Sprint; classic benchmark structure (e.g. Fran). |
-| **CHIPPER** | One pass through a long list of tasks; for time | 15–45 min | Aerobic–glycolytic | High volume; transitions; pacing. |
-| **LADDER** | Ascending or descending reps per round (e.g. 1-2-3-4-5) | 10–25 min | Mixed | Variation in density; often for time. |
-| **INTERVAL** | Fixed work window, fixed rest (e.g. every 5 min for 25 min) | 15–40 min | Aerobic / power | Repeatability; compare round times; "Interval Nancy". |
-| **STRENGTH_SINGLE** | Find heavy 1RM or heavy singles | N/A (skill) | Strength | Max strength; technique. |
-| **STRENGTH_SETS** | Prescribed sets × reps at load (e.g. 5×5, 3-3-3-1-1-1) | 15–30 min | Strength | Strength development; sub-maximal. |
-| **REST_DAY** | No workout; recovery / education content | — | — | Recovery; programming balance. |
+| Protocol | Description | Generated | Typical Duration | Energy System |
+|----------|-------------|-----------|------------------|---------------|
+| **AMRAP** | As Many Rounds/Reps As Possible | ✅ | 8–25 min | Glycolytic / Aerobic |
+| **FOR_TIME**| Rounds for Time (RFT) | ✅ | 5–30 min | Mixed |
+| **EMOM** | Every Minute On the Minute | ✅ | 8–20 min | Mixed / Quality |
+| **TABATA** | 20s work / 10s rest × 8 | ✅ | 4 min | Phosphagen |
+| **DEATH_BY**| Ascending ladder each minute | ✅ | 8–15 min | Glycolytic |
+| **21-15-9** | Descending rep sprint | ✅ | 5–12 min | Phosphagen–Glycolytic |
+| **LADDER** | Continuous rep increment | ✅ | 10–25 min | Mixed |
+| **CHIPPER** | Long list of tasks | ✅ | 15–45 min | Aerobic–Glycolytic |
+| **INTERVAL**| Fixed work/rest windows | ✅ | 15–40 min | Aerobic / Power |
+| **STRENGTH**| Finding 1RM or Heavy Sets | ✅ | 15–30 min | Strength |
+| **REST_DAY**| Recovery / Education | ✅ | — | — |
+| **OTHER**   | Modular / Varied | ✅ | Varies | Varies |
 
 ## Protocol → Stimulus Mapping
 

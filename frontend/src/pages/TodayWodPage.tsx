@@ -331,7 +331,7 @@ export function TodayWodPage() {
                             </div>
                         ) : (
                             <>
-                                {generatedWod.warmup && generatedWod.warmup.length > 0 && (
+                                {/* {generatedWod.warmup && generatedWod.warmup.length > 0 && (
                                     <div className="rounded-ds-lg border border-ds-border bg-ds-surface-subtle p-ds-3">
                                         <p className="text-xs uppercase tracking-wider text-ds-text-muted font-medium mb-1">
                                             Warm-up
@@ -345,7 +345,7 @@ export function TodayWodPage() {
                                             ))}
                                         </ul>
                                     </div>
-                                )}
+                                )} */}
                                 <WodDetailCard
                                     wod={generateFormDisplayWod ?? generatedWod.wod}
                                     equipmentPresetName={generatedWod.equipmentPresetName}
@@ -418,7 +418,7 @@ export function TodayWodPage() {
                                 <span className="font-medium">Done</span>
                             </div>
                         )}
-                        {todayWod.warmup && todayWod.warmup.length > 0 && (
+                        {/* {todayWod.warmup && todayWod.warmup.length > 0 && (
                             <div className="rounded-ds-lg border border-ds-border bg-ds-surface-subtle p-ds-3">
                                 <p className="text-xs uppercase tracking-wider text-ds-text-muted font-medium mb-1">
                                     Warm-up
@@ -432,7 +432,7 @@ export function TodayWodPage() {
                                     ))}
                                 </ul>
                             </div>
-                        )}
+                        )} */}
                         <WodDetailCard
                             key={`today-wod-${todayWod.id}-${selectedScaling.join(",")}`}
                             wod={displayWod ?? todayWod.wod}

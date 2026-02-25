@@ -1,3 +1,4 @@
+import { movementCacheService } from "./MovementCacheService.js";
 import { Movement, type IMovement } from "../models/Movement.js";
 import type { FitnessLevel } from "../models/User.js";
 import type { Modality } from "../models/Movement.js";
@@ -42,41 +43,28 @@ export class MovementFilterService {
      * Returns movements the user can perform given their equipment and level.
      */
     async filter(input: MovementFilterInput): Promise<FilteredMovement[]> {
-        const query: Record<string, unknown> = {};
+        const candidates = await movementCacheService.getAll();
 
-        // ─── Equipment Filter ───────────────────────────────────────────
-        // A movement is available if:
-        //   - It's bodyweight only (no equipment needed), OR
-        //   - ALL its required equipment is in the user's available set
-        // We fetch all candidates, then filter in-memory for the "ALL" check
-        // since MongoDB $all would work but we also need bodyweight fallback.
-
-        if (input.bodyweightOnly) {
-            query.bodyweightOnly = true;
-        }
-
-        if (input.modality) {
-            query.modality = input.modality;
-        }
-
-        if (input.family) {
-            query.family = input.family;
-        }
-
-        if (input.stimulusTag) {
-            query.stimulusTags = input.stimulusTag;
-        }
-
-        // Fetch candidates from DB
-        const candidates = await Movement.find(query).lean();
-
-        // In-memory equipment check: movement is valid if bodyweight OR
-        // all required equipment is in the user's available set
+        // ─── Filter Logic (In-Memory) ───────────────────────────────────
         const equipmentSet = new Set(input.availableEquipment);
 
         const eligible = candidates.filter((m) => {
+            // 1. Modality filter
+            if (input.modality && m.modality !== input.modality) return false;
+
+            // 2. Family filter
+            if (input.family && m.family !== input.family) return false;
+
+            // 3. Stimulus filter
+            if (input.stimulusTag && !m.stimulusTags.includes(input.stimulusTag as any)) return false;
+
+            // 4. Bodyweight-only filter
+            if (input.bodyweightOnly && !m.bodyweightOnly) return false;
+
+            // 5. Equipment Check
+            // A movement is valid if bodyweight OR all required equipment is in the user's available set
             if (m.bodyweightOnly) return true;
-            if (m.equipmentRequired.length === 0) return true;
+            if (!m.equipmentRequired || m.equipmentRequired.length === 0) return true;
             return m.equipmentRequired.every((eq) => equipmentSet.has(eq));
         });
 

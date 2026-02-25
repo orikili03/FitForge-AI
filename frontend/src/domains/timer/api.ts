@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const workoutTimerTypeSchema = z.enum(["EMOM", "AMRAP", "FOR_TIME", "TABATA"]);
+export const workoutTimerTypeSchema = z.enum(["AMRAP", "FOR_TIME", "EMOM", "TABATA", "DEATH_BY", "21_15_9", "CHIPPER", "LADDER", "INTERVAL", "STRENGTH_SINGLE", "STRENGTH_SETS", "REST_DAY", "OTHER"]);
 export type WorkoutTimerType = z.infer<typeof workoutTimerTypeSchema>;
 
 export type TimerPhase = "WORK" | "REST";

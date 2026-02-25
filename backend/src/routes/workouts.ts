@@ -28,14 +28,18 @@ router.post("/generate", async (req, res) => {
     try {
         const payload = generateSchema.parse(req.body);
 
-        // 1. Load user profile for fitness level
-        const user = await User.findById(req.userId).lean();
+        // 1. Fetch user and variance analysis in parallel (the two main DB hits)
+        const [user, variance] = await Promise.all([
+            User.findById(req.userId).lean(),
+            varianceCheckerService.analyze(req.userId!)
+        ]);
+
         if (!user) {
             res.status(404).json({ error: "User not found" });
             return;
         }
 
-        // 2. Filter movements by equipment + fitness level
+        // 2. Filter movements by equipment + fitness level (mostly in-memory now)
         const filtered = await movementFilterService.filter({
             availableEquipment: payload.equipment,
             fitnessLevel: user.fitnessLevel as FitnessLevel,
@@ -50,13 +54,10 @@ router.post("/generate", async (req, res) => {
             return;
         }
 
-        // 3. Analyze variance from recent history
-        const variance = await varianceCheckerService.analyze(req.userId!);
-
-        // 4. Rank movements by freshness (deprioritize recently-used families)
+        // 3. Rank movements by freshness (deprioritize recently-used families)
         const ranked = varianceCheckerService.rankByVariance(filtered, variance);
 
-        // 5. Assemble the WOD using the template engine
+        // 4. Assemble the WOD using the template engine
         const generated = wodAssemblyService.assemble(
             ranked,
             payload.protocol,
