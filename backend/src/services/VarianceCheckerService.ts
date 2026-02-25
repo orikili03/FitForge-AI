@@ -1,5 +1,5 @@
 import { Workout } from "../models/Workout.js";
-import { Movement } from "../models/Movement.js";
+// Movement model types are accessed via cache service
 import { movementCacheService } from "./MovementCacheService.js";
 import type { FilteredMovement } from "./MovementFilterService.js";
 

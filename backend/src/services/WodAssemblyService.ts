@@ -186,32 +186,32 @@ const STIMULUS_NOTES: Record<WodProtocol, string> = {
         "Focus on the intended stimulus. Listen to your body.",
 };
 
-// ─── Warmup Generator ────────────────────────────────────────────────────
-function generateWarmup(movements: FilteredMovement[]): string[] {
-    const warmup: string[] = [
-        "2 min light jog or row",
-        "10 arm circles (each direction)",
-        "10 leg swings (each side)",
-    ];
-
-    // Add movement-specific prep
-    const families = new Set(
-        movements.map(
-            (m) => (m.movement as unknown as { family?: string }).family ?? ""
-        )
-    );
-
-    if (families.has("squat")) warmup.push("10 air squats");
-    if (families.has("press"))
-        warmup.push("10 PVC pass-throughs", "5 strict press (empty bar)");
-    if (families.has("pull")) warmup.push("5 scap pull-ups", "5 ring rows");
-    if (families.has("hinge"))
-        warmup.push("10 good mornings (empty bar)", "5 Romanian deadlifts");
-    if (families.has("olympic"))
-        warmup.push("5 hang muscle cleans (empty bar)", "5 front squats");
-
-    return warmup;
-}
+// ─── Warmup Generator (FUTURE FEATURE — see TASKS.md Step 4) ──────────
+// function generateWarmup(movements: FilteredMovement[]): string[] {
+//     const warmup: string[] = [
+//         "2 min light jog or row",
+//         "10 arm circles (each direction)",
+//         "10 leg swings (each side)",
+//     ];
+//
+//     // Add movement-specific prep
+//     const families = new Set(
+//         movements.map(
+//             (m) => (m.movement as unknown as { family?: string }).family ?? ""
+//         )
+//     );
+//
+//     if (families.has("squat")) warmup.push("10 air squats");
+//     if (families.has("press"))
+//         warmup.push("10 PVC pass-throughs", "5 strict press (empty bar)");
+//     if (families.has("pull")) warmup.push("5 scap pull-ups", "5 ring rows");
+//     if (families.has("hinge"))
+//         warmup.push("10 good mornings (empty bar)", "5 Romanian deadlifts");
+//     if (families.has("olympic"))
+//         warmup.push("5 hang muscle cleans (empty bar)", "5 front squats");
+//
+//     return warmup;
+// }
 
 // ─── Scaling Options Generator ────────────────────────────────────────────
 function generateScalingOptions(movements: FilteredMovement[]): string[] {

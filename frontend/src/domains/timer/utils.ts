@@ -104,6 +104,10 @@ export function computeTimerState(elapsed: number, config: TimerConfig): Compute
             };
         }
     }
+
+    // Exhaustive fallback — should never be reached
+    const _exhaustiveCheck: never = config.type;
+    throw new Error(`Unknown timer type: ${_exhaustiveCheck}`);
 }
 
 /** Format seconds → "MM:SS" */

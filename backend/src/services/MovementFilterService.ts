@@ -1,5 +1,5 @@
 import { movementCacheService } from "./MovementCacheService.js";
-import { Movement, type IMovement } from "../models/Movement.js";
+import type { IMovement } from "../models/Movement.js";
 import type { FitnessLevel } from "../models/User.js";
 import type { Modality } from "../models/Movement.js";
 
@@ -70,7 +70,7 @@ export class MovementFilterService {
 
         // ─── Resolve variant name + load for fitness level ──────────────
         return eligible.map((m) => {
-            const resolved = this.resolveForLevel(m, input.fitnessLevel);
+            const resolved = this.resolveForLevel(m as unknown as Parameters<typeof this.resolveForLevel>[0], input.fitnessLevel);
             return {
                 movement: m as unknown as IMovement,
                 resolvedName: resolved.name,
