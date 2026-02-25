@@ -26,6 +26,14 @@ export function AuthTokenProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem(AUTH_STORAGE_KEY, token);
     }, [token, isHydrated]);
 
+    if (!isHydrated) {
+        return (
+            <div className="min-h-screen bg-ds-bg flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-ds-accent border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
+
     const setToken = useCallback((value: string) => {
         setTokenState(value);
         localStorage.setItem(AUTH_STORAGE_KEY, value);
@@ -37,14 +45,6 @@ export function AuthTokenProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const value: AuthTokenContextValue = { token, setToken, clearToken };
-
-    if (!isHydrated) {
-        return (
-            <div className="min-h-screen bg-ds-bg flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-ds-accent border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
-    }
 
     return (
         <AuthTokenContext.Provider value={value}>
