@@ -15,33 +15,35 @@ export default function App() {
     console.log(`📍 App rendering at path: ${location.pathname}${location.search}${location.hash}`);
 
     return (
-        <Routes>
-            {/* Public auth routes */}
-            <Route path="/auth/login" element={<LoginPage />} />
-            <Route path="/auth/register" element={<RegisterPage />} />
+        <div data-debug-root="true">
+            <Routes>
+                {/* Public auth routes */}
+                <Route path="/auth/login" element={<LoginPage />} />
+                <Route path="/auth/register" element={<RegisterPage />} />
 
-            {/* Protected app routes */}
-            <Route
-                path="/"
-                element={
-                    <PrivateRoute>
-                        <DashboardLayout />
-                    </PrivateRoute>
-                }
-            >
-                <Route index element={<TodayWodPage />} />
-                <Route path="wod/today" element={<Navigate to="/" replace />} />
-                <Route path="wod/generate" element={<TodayWodPage />} />
-                <Route path="wod/builder" element={<WorkoutBuilderPage />} />
-                <Route path="history" element={<HistoryPage />} />
-                <Route path="equipment" element={<EquipmentPage />} />
-                <Route path="gear" element={<Navigate to="/equipment" replace />} />
-                <Route path="profile" element={<ProfilePage />} />
-            </Route>
+                {/* Protected app routes */}
+                <Route
+                    path="/"
+                    element={
+                        <PrivateRoute>
+                            <DashboardLayout />
+                        </PrivateRoute>
+                    }
+                >
+                    <Route index element={<TodayWodPage />} />
+                    <Route path="wod/today" element={<Navigate to="/" replace />} />
+                    <Route path="wod/generate" element={<TodayWodPage />} />
+                    <Route path="wod/builder" element={<WorkoutBuilderPage />} />
+                    <Route path="history" element={<HistoryPage />} />
+                    <Route path="equipment" element={<EquipmentPage />} />
+                    <Route path="gear" element={<Navigate to="/equipment" replace />} />
+                    <Route path="profile" element={<ProfilePage />} />
+                </Route>
 
-            {/* Catch‑all redirect */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+                {/* Catch‑all redirect */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        </div>
     );
 }
 
