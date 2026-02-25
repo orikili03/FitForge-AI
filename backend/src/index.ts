@@ -30,17 +30,9 @@ app.use("/api/users", userRoutes);
 app.use("/api/movements", movementRoutes);
 app.use("/api/workouts", workoutRoutes);
 
-// ─── Serve Frontend (SPA Fallback) ────────────────────────────────────────
-const frontendPath = path.resolve(__dirname, "../../frontend/dist");
-app.use(express.static(frontendPath));
-
-// Catch-all route for any GET request that doesn't match an API route
-app.get("{/*path}", (req, res, next) => {
-    // If it's an API route that reached here, let it be handled by 404/Error Handler
-    if (req.path.startsWith("/api") || req.path.startsWith("/health")) {
-        return next();
-    }
-    res.sendFile(path.join(frontendPath, "index.html"));
+// ─── 404 Handler (API only) ───────────────────────────────────────────────
+app.use((_req, res) => {
+    res.status(404).json({ error: "Endpoint not found" });
 });
 
 // ─── Error Handler ────────────────────────────────────────────────────────
