@@ -35,7 +35,7 @@ const frontendPath = path.resolve(__dirname, "../../frontend/dist");
 app.use(express.static(frontendPath));
 
 // Catch-all route for any GET request that doesn't match an API route
-app.get("*", (req, res, next) => {
+app.get("(.*)", (req, res, next) => {
     // If it's an API route that reached here, let it be handled by 404/Error Handler
     if (req.path.startsWith("/api") || req.path.startsWith("/health")) {
         return next();
