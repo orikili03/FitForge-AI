@@ -8,8 +8,12 @@ import { EquipmentPage } from '../pages/EquipmentPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
+import { useLocation } from 'react-router-dom';
 
 export default function App() {
+    const location = useLocation();
+    console.log(`📍 App rendering at path: ${location.pathname}${location.search}${location.hash}`);
+
     return (
         <Routes>
             {/* Public auth routes */}

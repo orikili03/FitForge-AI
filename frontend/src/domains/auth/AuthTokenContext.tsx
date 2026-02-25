@@ -13,7 +13,9 @@ const AuthTokenContext = React.createContext<AuthTokenContextValue | null>(null)
 export function AuthTokenProvider({ children }: { children: React.ReactNode }) {
     const [token, setTokenState] = useState<string | null>(() => {
         if (typeof window === "undefined") return null;
-        return localStorage.getItem(AUTH_STORAGE_KEY);
+        const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+        console.log(`🔑 AuthTokenProvider: Initial token found: ${stored ? 'YES' : 'NO'}`);
+        return stored;
     });
 
     useEffect(() => {
