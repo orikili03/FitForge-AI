@@ -11,7 +11,6 @@ import "./index.css";
 const queryClient = new QueryClient();
 
 const rootEl = document.getElementById("root");
-console.log("🚀 App starting initialization...");
 if (!rootEl) throw new Error("Root element #root not found");
 
 ReactDOM.createRoot(rootEl).render(
