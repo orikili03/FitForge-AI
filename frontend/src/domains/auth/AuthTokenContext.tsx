@@ -11,17 +11,28 @@ type AuthTokenContextValue = {
 const AuthTokenContext = React.createContext<AuthTokenContextValue | null>(null);
 
 export function AuthTokenProvider({ children }: { children: React.ReactNode }) {
-    const [token, setTokenState] = useState<string | null>(() => {
-        if (typeof window === "undefined") return null;
-        const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-        console.log(`🔑 AuthTokenProvider: Initial token found: ${stored ? 'YES' : 'NO'}`);
-        return stored;
-    });
+    const [isHydrated, setIsHydrated] = useState(false);
+    const [token, setTokenState] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!token) return;
+        const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+        console.log(`🔑 AuthTokenProvider: Initializing from storage... Found: ${stored ? 'YES' : 'NO'}`);
+        setTokenState(stored);
+        setIsHydrated(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isHydrated || !token) return;
         localStorage.setItem(AUTH_STORAGE_KEY, token);
-    }, [token]);
+    }, [token, isHydrated]);
+
+    if (!isHydrated) {
+        return (
+            <div className="min-h-screen bg-ds-bg flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-ds-accent border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     const setToken = useCallback((value: string) => {
         setTokenState(value);

@@ -18,7 +18,7 @@ ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter basename="/">
+        <BrowserRouter>
           <AuthTokenProvider>
             <App />
           </AuthTokenProvider>
