@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -5,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLogin } from '../../domains/auth/hooks';
 import { cn } from '../../lib/utils';
 import { Button } from '../../components/ui';
+import { Eye, EyeOff } from 'lucide-react';
 
 const loginSchema = z.object({
     email: z.string().email({ message: 'Invalid email address' }),
@@ -16,6 +18,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function LoginPage() {
     const navigate = useNavigate();
     const loginMutation = useLogin();
+    const [showPassword, setShowPassword] = useState(false);
 
     const {
         register,
@@ -76,17 +79,26 @@ export function LoginPage() {
                             <label htmlFor="password" className="block text-ds-caption font-medium text-ds-text-secondary">
                                 Password
                             </label>
-                            <input
-                                id="password"
-                                type="password"
-                                autoComplete="current-password"
-                                {...register('password')}
-                                className={cn(
-                                    "mt-1 block w-full rounded-ds-md border border-ds-border bg-ds-bg-subtle px-3 py-2 text-ds-text placeholder-ds-text-faint focus:border-ds-accent focus:outline-none focus:ring-1 focus:ring-ds-accent",
-                                    errors.password && "border-red-500 focus:border-red-500 focus:ring-red-500"
-                                )}
-                                placeholder="••••••••"
-                            />
+                            <div className="relative mt-1">
+                                <input
+                                    id="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    autoComplete="current-password"
+                                    {...register('password')}
+                                    className={cn(
+                                        "block w-full rounded-ds-md border border-ds-border bg-ds-bg-subtle pl-3 pr-10 py-2 text-ds-text placeholder-ds-text-faint focus:border-ds-accent focus:outline-none focus:ring-1 focus:ring-ds-accent",
+                                        errors.password && "border-red-500 focus:border-red-500 focus:ring-red-500"
+                                    )}
+                                    placeholder="••••••••"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-ds-text-faint hover:text-ds-text-secondary transition-colors"
+                                >
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
                             {errors.password && (
                                 <p className="mt-1 text-ds-caption text-red-500">{errors.password.message}</p>
                             )}

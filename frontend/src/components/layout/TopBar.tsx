@@ -9,7 +9,7 @@ import {
     User,
     LogOut,
 } from "lucide-react";
-import { useAuthToken } from "../../domains/auth/AuthTokenContext";
+import { useAuth } from "../../domains/auth/AuthTokenContext";
 import { Logo } from "../ui";
 
 const navItems = [
@@ -28,11 +28,11 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 
 export function TopBar() {
     const [open, setOpen] = useState(false);
-    const { clearToken } = useAuthToken();
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
-    const handleLogout = () => {
-        clearToken();
+    const handleLogout = async () => {
+        await logout();
         navigate("/auth/login");
         setOpen(false);
     };

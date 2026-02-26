@@ -6,7 +6,7 @@ import {
     User,
     LogOut,
 } from "lucide-react";
-import { useAuthToken } from "../../domains/auth/AuthTokenContext";
+import { useAuth } from "../../domains/auth/AuthTokenContext";
 import { Button, Logo } from "../ui";
 
 const navItems = [
@@ -17,11 +17,11 @@ const navItems = [
 ];
 
 export function Sidebar() {
-    const { clearToken } = useAuthToken();
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
-    const handleLogout = () => {
-        clearToken();
+    const handleLogout = async () => {
+        await logout();
         navigate("/auth/login");
     };
 

@@ -15,9 +15,8 @@ router.use(authGuard);
 
 // ─── Generate Request Validation ──────────────────────────────────────────
 const generateSchema = z.object({
-    timeCapMinutes: z.number().min(1).max(60),
+    category: z.enum(["sprint", "metcon", "long"]),
     equipment: z.array(z.string()),
-    protocol: z.string().default("recommended"),
     injuries: z.string().optional(),
     presetName: z.string().optional(),
 });
@@ -60,17 +59,16 @@ router.post("/generate", async (req, res) => {
         // 4. Assemble the WOD using the template engine
         const generated = wodAssemblyService.assemble(
             ranked,
-            payload.protocol,
-            payload.timeCapMinutes,
+            payload.category,
             payload.presetName
         );
 
-        // 6. Save to workout history
+        // 6. Save to workout history (including new stimulus metadata)
         const workout = await Workout.create({
             userId: req.userId,
             date: new Date(),
             type: generated.wod.type,
-            durationMinutes: payload.timeCapMinutes,
+            durationMinutes: generated.wod.duration || 0,
             ...generated,
         });
 
@@ -87,7 +85,7 @@ router.post("/generate", async (req, res) => {
         });
     } catch (err) {
         if (err instanceof z.ZodError) {
-            res.status(400).json({ error: err.errors[0].message });
+            res.status(400).json({ error: err.issues[0]?.message || "Invalid request data" });
             return;
         }
         throw err;
@@ -95,20 +93,46 @@ router.post("/generate", async (req, res) => {
 });
 
 // ─── GET /workouts/history ────────────────────────────────────────────────
+// Cursor-based pagination: ?limit=20&cursor=<lastId>
+// Returns { data, nextCursor, hasMore, total }
+const DEFAULT_PAGE_SIZE = 20;
+
 router.get("/history", async (req, res) => {
-    const workouts = await Workout.find({ userId: req.userId })
-        .sort({ date: -1 })
-        .lean();
+    const limit = Math.min(
+        Math.max(Number(req.query.limit) || DEFAULT_PAGE_SIZE, 1),
+        100 // hard cap
+    );
+    const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+
+    // Build query
+    const filter: Record<string, unknown> = { userId: req.userId };
+    if (cursor) {
+        filter._id = { $lt: cursor };
+    }
+
+    // Fetch one extra to detect if there's a next page
+    const [workouts, total] = await Promise.all([
+        Workout.find(filter)
+            .sort({ _id: -1 })
+            .limit(limit + 1)
+            .lean(),
+        Workout.countDocuments({ userId: req.userId }),
+    ]);
+
+    const hasMore = workouts.length > limit;
+    const page = hasMore ? workouts.slice(0, limit) : workouts;
 
     // Transform _id to id for frontend compatibility
-    const data = workouts.map((w) => ({
+    const data = page.map((w) => ({
         ...w,
         id: w._id.toString(),
         date: w.date.toISOString(),
         _id: undefined,
     }));
 
-    res.json({ data });
+    const nextCursor = hasMore ? page[page.length - 1]._id.toString() : null;
+
+    res.json({ data, nextCursor, hasMore, total });
 });
 
 // ─── POST /workouts/complete ──────────────────────────────────────────────
@@ -142,7 +166,7 @@ router.post("/complete", async (req, res) => {
         res.json({ data: { success: true } });
     } catch (err) {
         if (err instanceof z.ZodError) {
-            res.status(400).json({ error: err.errors[0].message });
+            res.status(400).json({ error: err.issues[0]?.message || "Invalid request data" });
             return;
         }
         throw err;
@@ -150,8 +174,39 @@ router.post("/complete", async (req, res) => {
 });
 
 // ─── DELETE /workouts/history ─────────────────────────────────────────────
+// Requires { confirm: "DELETE_ALL_HISTORY" } in body to prevent accidental wipes.
+const deleteHistorySchema = z.object({
+    confirm: z.literal("DELETE_ALL_HISTORY"),
+});
+
 router.delete("/history", async (req, res) => {
-    await Workout.deleteMany({ userId: req.userId });
+    try {
+        deleteHistorySchema.parse(req.body);
+    } catch (err) {
+        if (err instanceof z.ZodError) {
+            res.status(400).json({ error: err.issues[0]?.message || "Invalid request data" });
+            return;
+        }
+        throw err;
+    }
+
+    const result = await Workout.deleteMany({ userId: req.userId });
+    res.json({ data: { success: true, deletedCount: result.deletedCount } });
+});
+
+// ─── DELETE /workouts/:id ─────────────────────────────────────────────────
+// Delete a single workout by ID (ownership verified).
+router.delete("/:id", async (req, res) => {
+    const result = await Workout.findOneAndDelete({
+        _id: req.params.id,
+        userId: req.userId,
+    });
+
+    if (!result) {
+        res.status(404).json({ error: "Workout not found" });
+        return;
+    }
+
     res.json({ data: { success: true } });
 });
 

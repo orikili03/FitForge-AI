@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const movementItemSpecSchema = z.object({
     reps: z.number(),
+    isMaxReps: z.boolean().optional(),
     name: z.string(),
     weight: z.string().optional(),
     distance: z.string().optional(),
@@ -24,6 +25,8 @@ export const workoutSpecSchema = z.object({
     timeDomain: z.string().optional(),
     movementEmphasis: z.array(z.string()).optional(),
     stimulusNote: z.string().optional(),
+    energySystem: z.string().optional(),
+    primaryStimulus: z.string().optional(),
     equipmentPresetName: z.string().optional(),
     equipmentUsed: z.array(z.string()).optional(),
 });
@@ -51,3 +54,13 @@ export const completeWorkoutPayloadSchema = z.object({
 });
 
 export type CompleteWorkoutPayload = z.infer<typeof completeWorkoutPayloadSchema>;
+
+// ─── Paginated History Response ───────────────────────────────────────────
+export const paginatedHistorySchema = z.object({
+    data: z.array(workoutResponseSchema),
+    nextCursor: z.string().nullable(),
+    hasMore: z.boolean(),
+    total: z.number(),
+});
+
+export type PaginatedHistoryResponse = z.infer<typeof paginatedHistorySchema>;

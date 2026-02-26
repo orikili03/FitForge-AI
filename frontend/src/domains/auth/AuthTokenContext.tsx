@@ -1,49 +1,84 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { useState, useEffect, useCallback } from "react";
-import { AUTH_STORAGE_KEY } from "../../lib/authToken";
+import { apiClient } from "../../lib/apiClient";
+import { clearLegacyToken } from "../../lib/authToken";
 
-type AuthTokenContextValue = {
-    token: string | null;
-    setToken: (value: string) => void;
-    clearToken: () => void;
+// ─── Types ────────────────────────────────────────────────────────────────
+export type AuthUser = { id: string; email: string };
+
+type AuthContextValue = {
+    /** Whether the user is authenticated (cookie verified). */
+    isAuthenticated: boolean;
+    /** True while the initial session check is in progress. */
+    isLoading: boolean;
+    /** Basic user info from the session. */
+    user: AuthUser | null;
+    /** Call after a successful login/register to update UI state. */
+    onLoginSuccess: (user: AuthUser) => void;
+    /** Clear session (calls backend logout to remove cookie). */
+    logout: () => Promise<void>;
 };
 
-const AuthTokenContext = React.createContext<AuthTokenContextValue | null>(null);
+const AuthContext = React.createContext<AuthContextValue | null>(null);
 
+// ─── Provider ─────────────────────────────────────────────────────────────
 export function AuthTokenProvider({ children }: { children: React.ReactNode }) {
-    const [token, setTokenState] = useState<string | null>(() => {
-        if (typeof window === "undefined") return null;
-        return localStorage.getItem(AUTH_STORAGE_KEY);
-    });
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser] = useState<AuthUser | null>(null);
 
+    // On mount: clean up legacy localStorage token + verify cookie session
     useEffect(() => {
-        if (!token) return;
-        localStorage.setItem(AUTH_STORAGE_KEY, token);
-    }, [token]);
+        clearLegacyToken();
 
-    const setToken = useCallback((value: string) => {
-        setTokenState(value);
-        localStorage.setItem(AUTH_STORAGE_KEY, value);
+        apiClient
+            .get<{ user: AuthUser }>("/auth/me")
+            .then((res) => {
+                setUser(res.data.user);
+                setIsAuthenticated(true);
+            })
+            .catch(() => {
+                setUser(null);
+                setIsAuthenticated(false);
+            })
+            .finally(() => setIsLoading(false));
     }, []);
 
-    const clearToken = useCallback(() => {
-        setTokenState(null);
-        localStorage.removeItem(AUTH_STORAGE_KEY);
+    const onLoginSuccess = useCallback((userData: AuthUser) => {
+        setUser(userData);
+        setIsAuthenticated(true);
     }, []);
 
-    const value: AuthTokenContextValue = { token, setToken, clearToken };
+    const logout = useCallback(async () => {
+        try {
+            await apiClient.post("/auth/logout");
+        } catch {
+            // Ignore network errors on logout — cookie may already be gone
+        }
+        setUser(null);
+        setIsAuthenticated(false);
+    }, []);
+
+    const value: AuthContextValue = {
+        isAuthenticated,
+        isLoading,
+        user,
+        onLoginSuccess,
+        logout,
+    };
 
     return (
-        <AuthTokenContext.Provider value={value}>
+        <AuthContext.Provider value={value}>
             {children}
-        </AuthTokenContext.Provider>
+        </AuthContext.Provider>
     );
 }
 
-export function useAuthToken(): AuthTokenContextValue {
-    const ctx = React.useContext(AuthTokenContext);
+// ─── Hook ─────────────────────────────────────────────────────────────────
+export function useAuth(): AuthContextValue {
+    const ctx = React.useContext(AuthContext);
     if (ctx === null) {
-        throw new Error("useAuthToken must be used within AuthTokenProvider");
+        throw new Error("useAuth must be used within AuthTokenProvider");
     }
     return ctx;
 }

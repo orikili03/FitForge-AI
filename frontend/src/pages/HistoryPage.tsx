@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, Eye, X, Trash2 } from "lucide-react";
-import { useWorkoutHistory, useClearWorkoutHistory } from "../domains/workouts/hooks";
+import { Search, Eye, X, Trash2, Loader2 } from "lucide-react";
+import { useWorkoutHistoryInfinite, useClearWorkoutHistory, useDeleteWorkout } from "../domains/workouts/hooks";
 import { expandForDisplay } from "../lib/abbreviations";
 import { WodBlock } from "../components/wod/WodBlock";
 import type { WorkoutResponse } from "../domains/workouts/api";
@@ -53,50 +53,108 @@ function filterHistory(
 
 export function HistoryPage() {
     const queryClient = useQueryClient();
-    const { data, isLoading } = useWorkoutHistory();
+
+    // ─── Infinite Query ───────────────────────────────────────────────────
+    const {
+        data: infiniteData,
+        isLoading,
+        isFetchingNextPage,
+        hasNextPage,
+        fetchNextPage,
+    } = useWorkoutHistoryInfinite();
+
     const clearHistoryMutation = useClearWorkoutHistory();
+    const deleteWorkoutMutation = useDeleteWorkout();
+
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState("");
     const [filterDuration, setFilterDuration] = useState("");
     const [viewWorkout, setViewWorkout] = useState<WorkoutResponse | null>(null);
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [confirmDeleteWorkout, setConfirmDeleteWorkout] = useState<WorkoutResponse | null>(null);
+
+    // Flatten all pages into a single list
+    const allWorkouts = useMemo(
+        () => infiniteData?.pages.flatMap((page) => page.data) ?? [],
+        [infiniteData]
+    );
+
+    const totalCount = infiniteData?.pages[0]?.total ?? 0;
 
     const handleClearHistory = () => {
-        if (!window.confirm("Delete all workout history? This cannot be undone.")) return;
         clearHistoryMutation.mutate(undefined, {
             onSuccess: () => {
-                queryClient.invalidateQueries({ queryKey: ["workouts", "history"] });
+                queryClient.invalidateQueries({ queryKey: ["workouts"] });
                 setViewWorkout(null);
+                setConfirmDeleteOpen(false);
             },
         });
     };
 
-    const filtered = useMemo(() => {
-        if (!data) return [];
-        return filterHistory(data, searchQuery, filterType, filterDuration);
-    }, [data, searchQuery, filterType, filterDuration]);
+    const handleDeleteSingle = () => {
+        if (!confirmDeleteWorkout) return;
+        deleteWorkoutMutation.mutate(confirmDeleteWorkout.id, {
+            onSuccess: () => {
+                if (viewWorkout?.id === confirmDeleteWorkout.id) setViewWorkout(null);
+                setConfirmDeleteWorkout(null);
+            },
+        });
+    };
+
+    // ─── Client-Side Filtering (applied to all loaded pages) ──────────────
+    const filtered = useMemo(
+        () => filterHistory(allWorkouts, searchQuery, filterType, filterDuration),
+        [allWorkouts, searchQuery, filterType, filterDuration]
+    );
+
+    const hasActiveFilters = !!(searchQuery || filterType || filterDuration);
 
     const wodTypes = useMemo(() => {
-        if (!data) return [];
         const set = new Set<string>();
-        data.forEach((w) => {
+        allWorkouts.forEach((w) => {
             const t = w.wod?.type ?? w.type;
             if (t) set.add(t);
         });
         return Array.from(set).sort();
-    }, [data]);
+    }, [allWorkouts]);
+
+    // ─── Infinite Scroll Sentinel ─────────────────────────────────────────
+    const sentinelRef = useRef<HTMLDivElement>(null);
+
+    const handleIntersect = useCallback(
+        (entries: IntersectionObserverEntry[]) => {
+            const [entry] = entries;
+            if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+            }
+        },
+        [hasNextPage, isFetchingNextPage, fetchNextPage]
+    );
+
+    useEffect(() => {
+        const el = sentinelRef.current;
+        if (!el) return;
+
+        const observer = new IntersectionObserver(handleIntersect, {
+            rootMargin: "200px", // trigger 200px before bottom
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [handleIntersect]);
 
     return (
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-semibold text-ds-text">History</h1>
                 <p className="text-sm text-ds-text-muted mt-1">
-                    {data && data.length > 0
-                        ? "Search and filter past workouts. Click the eye to view details."
+                    {totalCount > 0
+                        ? `${totalCount} workout${totalCount !== 1 ? "s" : ""} logged. Click the eye to view details.`
                         : "Your past workouts will appear here."}
                 </p>
             </div>
 
-            {data && data.length > 0 && (
+            {/* ── Search & Filters ─────────────────────────────────────── */}
+            {allWorkouts.length > 0 && (
                 <div className="rounded-ds-xl border border-ds-border bg-ds-surface p-ds-3 shadow-ds-sm space-y-3">
                     <div className="relative">
                         <Search
@@ -135,7 +193,7 @@ export function HistoryPage() {
                             <option value="medium">Medium (13–22 min)</option>
                             <option value="long">Long (23+ min)</option>
                         </select>
-                        {(searchQuery || filterType || filterDuration) && (
+                        {hasActiveFilters && (
                             <button
                                 type="button"
                                 onClick={() => {
@@ -149,23 +207,25 @@ export function HistoryPage() {
                             </button>
                         )}
                     </div>
-                    {(searchQuery || filterType || filterDuration) && (
+                    {hasActiveFilters && (
                         <p className="mt-2 text-ds-caption text-ds-text-muted">
-                            Showing {filtered.length} of {data.length} workouts
+                            Showing {filtered.length} of {totalCount} workouts
+                            {hasNextPage && " (scroll for more)"}
                         </p>
                     )}
                 </div>
             )}
 
+            {/* ── Workout List ─────────────────────────────────────────── */}
             <div className="card">
                 {isLoading && <p className="text-sm text-ds-text-muted">Loading...</p>}
-                {!isLoading && (!data || data.length === 0) && (
+                {!isLoading && allWorkouts.length === 0 && (
                     <p className="text-sm text-ds-text-muted">No workout history available.</p>
                 )}
-                {!isLoading && data && data.length > 0 && filtered.length === 0 && (
+                {!isLoading && allWorkouts.length > 0 && filtered.length === 0 && (
                     <p className="text-sm text-ds-text-muted">No workouts match your search or filters.</p>
                 )}
-                {!isLoading && data && filtered.length > 0 && (
+                {!isLoading && filtered.length > 0 && (
                     <ul className="divide-y divide-ds-border text-sm">
                         {filtered.map((w) => (
                             <li key={w.id} className="py-3 flex items-center justify-between gap-3">
@@ -188,25 +248,51 @@ export function HistoryPage() {
                                         {new Date(w.date).toLocaleDateString()} • {w.wod.movements.map(expandForDisplay).join(" / ")}
                                     </p>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setViewWorkout(w)}
-                                    className="p-2 rounded-lg text-ds-text-muted hover:text-amber-400 hover:bg-amber-400/10 transition-colors"
-                                    title="View workout"
-                                    aria-label="View workout details"
-                                >
-                                    <Eye className="h-5 w-5" />
-                                </button>
+                                <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => setConfirmDeleteWorkout(w)}
+                                        className="p-2 rounded-lg text-ds-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                        title="Delete workout"
+                                        aria-label="Delete this workout"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setViewWorkout(w)}
+                                        className="p-2 rounded-lg text-ds-text-muted hover:text-amber-400 hover:bg-amber-400/10 transition-colors"
+                                        title="View workout"
+                                        aria-label="View workout details"
+                                    >
+                                        <Eye className="h-5 w-5" />
+                                    </button>
+                                </div>
                             </li>
                         ))}
                     </ul>
                 )}
 
-                {data && data.length > 0 && (
+                {/* ── Infinite Scroll Sentinel & Loading Indicator ────── */}
+                <div ref={sentinelRef} className="h-1" aria-hidden="true" />
+                {isFetchingNextPage && (
+                    <div className="flex items-center justify-center gap-2 py-4 text-ds-text-muted">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-ds-body-sm">Loading more workouts…</span>
+                    </div>
+                )}
+                {!isLoading && !hasNextPage && allWorkouts.length > 0 && (
+                    <p className="text-center text-ds-caption text-ds-text-muted pt-4 pb-1">
+                        You've reached the end — {totalCount} workout{totalCount !== 1 ? "s" : ""} total
+                    </p>
+                )}
+
+                {/* ── Bulk Delete Button ───────────────────────────────── */}
+                {allWorkouts.length > 0 && (
                     <div className="border-t border-ds-border pt-4 flex justify-end">
                         <button
                             type="button"
-                            onClick={handleClearHistory}
+                            onClick={() => setConfirmDeleteOpen(true)}
                             disabled={clearHistoryMutation.isPending}
                             className="inline-flex items-center gap-1.5 rounded-ds-md border border-ds-border-strong bg-ds-surface px-3 py-2 text-ds-body-sm font-medium text-ds-text-muted transition-colors hover:bg-ds-surface-hover hover:text-red-400 hover:border-red-400/50 disabled:opacity-50 disabled:pointer-events-none"
                             aria-label="Delete all workout history"
@@ -217,6 +303,135 @@ export function HistoryPage() {
                     </div>
                 )}
 
+                {/* ── Bulk Delete Confirmation Modal ───────────────────── */}
+                {confirmDeleteOpen && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                        onClick={() => !clearHistoryMutation.isPending && setConfirmDeleteOpen(false)}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="confirm-delete-title"
+                        onKeyDown={(e) => {
+                            if (e.key === "Escape" && !clearHistoryMutation.isPending) setConfirmDeleteOpen(false);
+                        }}
+                    >
+                        <div
+                            className="w-full max-w-sm rounded-ds-xl border border-ds-border bg-ds-surface p-6 shadow-ds-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
+                                <Trash2 className="h-6 w-6 text-red-400" />
+                            </div>
+
+                            <h2 id="confirm-delete-title" className="text-center text-lg font-semibold text-ds-text mb-2">
+                                Delete All History?
+                            </h2>
+                            <p className="text-center text-ds-body-sm text-ds-text-muted mb-6">
+                                This will permanently remove <strong className="text-ds-text">{totalCount} workout{totalCount !== 1 ? "s" : ""}</strong> from your history. This action cannot be undone.
+                            </p>
+
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmDeleteOpen(false)}
+                                    disabled={clearHistoryMutation.isPending}
+                                    className="flex-1 rounded-ds-xl border border-ds-border-strong bg-ds-surface px-4 py-3 text-ds-body-sm font-medium text-ds-text transition-all duration-250 hover:bg-ds-surface-hover active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleClearHistory}
+                                    disabled={clearHistoryMutation.isPending}
+                                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-ds-xl bg-red-500/90 px-4 py-3 text-ds-body-sm font-semibold text-white shadow-ds-sm transition-all duration-250 hover:bg-red-500 hover:shadow-ds-md active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+                                >
+                                    {clearHistoryMutation.isPending ? (
+                                        <>
+                                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                            Deleting…
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 className="h-4 w-4" />
+                                            Delete All
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Single Workout Delete Confirmation Modal ──────── */}
+                {confirmDeleteWorkout && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                        onClick={() => !deleteWorkoutMutation.isPending && setConfirmDeleteWorkout(null)}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="confirm-single-delete-title"
+                        onKeyDown={(e) => {
+                            if (e.key === "Escape" && !deleteWorkoutMutation.isPending) setConfirmDeleteWorkout(null);
+                        }}
+                    >
+                        <div
+                            className="w-full max-w-sm rounded-ds-xl border border-ds-border bg-ds-surface p-6 shadow-ds-lg"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
+                                <Trash2 className="h-6 w-6 text-red-400" />
+                            </div>
+
+                            <h2 id="confirm-single-delete-title" className="text-center text-lg font-semibold text-ds-text mb-2">
+                                Delete This Workout?
+                            </h2>
+                            <p className="text-center text-ds-body-sm text-ds-text-muted mb-1">
+                                Are you sure you want to delete this workout?
+                            </p>
+                            <p className="text-center text-ds-body-sm text-ds-text mb-6">
+                                <strong>{confirmDeleteWorkout.wod.type}</strong>
+                                {" · "}
+                                {new Date(confirmDeleteWorkout.date).toLocaleDateString(undefined, {
+                                    weekday: "short",
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                })}
+                            </p>
+
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmDeleteWorkout(null)}
+                                    disabled={deleteWorkoutMutation.isPending}
+                                    className="flex-1 rounded-ds-xl border border-ds-border-strong bg-ds-surface px-4 py-3 text-ds-body-sm font-medium text-ds-text transition-all duration-250 hover:bg-ds-surface-hover active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDeleteSingle}
+                                    disabled={deleteWorkoutMutation.isPending}
+                                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-ds-xl bg-red-500/90 px-4 py-3 text-ds-body-sm font-semibold text-white shadow-ds-sm transition-all duration-250 hover:bg-red-500 hover:shadow-ds-md active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+                                >
+                                    {deleteWorkoutMutation.isPending ? (
+                                        <>
+                                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                            Deleting…
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 className="h-4 w-4" />
+                                            Delete
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Workout Detail Modal ─────────────────────────────── */}
                 {viewWorkout && (
                     <div
                         className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
@@ -236,14 +451,29 @@ export function HistoryPage() {
                                         <> • {(viewWorkout.wod.duration ?? viewWorkout.durationMinutes)} min</>
                                     )}
                                 </h2>
-                                <button
-                                    type="button"
-                                    onClick={() => setViewWorkout(null)}
-                                    className="p-1.5 rounded-lg text-ds-text-muted hover:text-ds-text hover:bg-ds-surface-hover transition-colors"
-                                    aria-label="Close"
-                                >
-                                    <X className="h-5 w-5" />
-                                </button>
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setConfirmDeleteWorkout(viewWorkout);
+                                            setViewWorkout(null);
+                                        }}
+                                        className="p-1.5 rounded-lg text-ds-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                                        aria-label="Delete this workout"
+                                        title="Delete workout"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                    <span className="mx-1 h-4 w-px bg-ds-border" aria-hidden="true" />
+                                    <button
+                                        type="button"
+                                        onClick={() => setViewWorkout(null)}
+                                        className="p-1.5 rounded-lg text-ds-text-muted hover:text-ds-text hover:bg-ds-surface-hover transition-colors"
+                                        aria-label="Close"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                </div>
                             </div>
                             <div className="mb-4 text-sm text-ds-text-muted">
                                 {new Date(viewWorkout.date).toLocaleDateString(undefined, {
@@ -290,4 +520,3 @@ export function HistoryPage() {
         </div>
     );
 }
-

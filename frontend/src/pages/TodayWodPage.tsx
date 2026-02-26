@@ -28,31 +28,15 @@ function getTodayWod(history: WorkoutResponse[] | undefined): WorkoutResponse | 
 }
 
 const DURATION_OPTIONS = [
-    { id: "short" as const, label: "Short", note: "Sprint effort" },
-    { id: "medium" as const, label: "Medium", note: "Sustained effort" },
-    { id: "long" as const, label: "Long", note: "Aerobic pacing" },
+    { id: "sprint" as const, label: "Short", note: "Short (Sprint) effort (< 7m)" },
+    { id: "metcon" as const, label: "Medium", note: "Medium (Quick Metcon) (7-20m)" },
+    { id: "long" as const, label: "Long", note: "Long (Aerobic Endurance) (20m+)" },
 ] as const;
 
-const DURATION_TO_MINUTES: Record<"short" | "medium" | "long", number> = {
-    short: 10,
-    medium: 20,
-    long: 45,
-};
-
-const PROTOCOL_OPTIONS: { value: string; label: string }[] = [
-    { value: "recommended", label: "Recommended" },
-    { value: "EMOM", label: "EMOM" },
-    { value: "AMRAP", label: "AMRAP" },
-    { value: "FOR_TIME", label: "FOR TIME" },
-    { value: "TABATA", label: "TABATA" },
-    { value: "DEATH_BY", label: "Death By" },
-    { value: "21_15_9", label: "21; 15; 9" },
-];
 
 interface FormValues {
-    duration: "short" | "medium" | "long";
+    duration: "sprint" | "metcon" | "long";
     presetId: string;
-    protocol: string;
 }
 
 export function TodayWodPage() {
@@ -78,9 +62,8 @@ export function TodayWodPage() {
 
     const { register, handleSubmit, watch, setValue } = useForm<FormValues>({
         defaultValues: {
-            duration: "medium",
+            duration: "metcon",
             presetId: "none",
-            protocol: "recommended",
         },
     });
     const generateMutation = useGenerateWorkout();
@@ -130,9 +113,8 @@ export function TodayWodPage() {
         (values: FormValues) => {
             generateMutation.mutate(
                 {
-                    timeCapMinutes: DURATION_TO_MINUTES[values.duration],
+                    category: values.duration,
                     equipment: Array.from(includedEquipmentIds),
-                    protocol: values.protocol,
                     presetName: getPresetName(values.presetId),
                 },
                 {
@@ -293,19 +275,6 @@ export function TodayWodPage() {
                                         </ul>
                                     </div>
                                 )}
-                            </div>
-                            <div>
-                                <label className="block text-ds-body-sm font-medium text-ds-text mb-1">Protocol</label>
-                                <select
-                                    className="w-full rounded-ds-xl border border-ds-border bg-ds-surface-subtle text-ds-text px-ds-3 py-2 text-ds-body-sm focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20 focus:outline-none transition-all duration-250"
-                                    {...register("protocol")}
-                                >
-                                    {PROTOCOL_OPTIONS.map((opt) => (
-                                        <option key={opt.value} value={opt.value}>
-                                            {opt.label}
-                                        </option>
-                                    ))}
-                                </select>
                             </div>
                             <button
                                 type="submit"

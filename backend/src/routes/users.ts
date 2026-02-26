@@ -77,7 +77,7 @@ router.put("/me", async (req, res) => {
         });
     } catch (err) {
         if (err instanceof z.ZodError) {
-            res.status(400).json({ error: err.errors[0].message });
+            res.status(400).json({ error: err.issues[0]?.message || "Invalid request data" });
             return;
         }
         throw err;
@@ -107,7 +107,7 @@ router.put("/me/equipment", async (req, res) => {
         });
     } catch (err) {
         if (err instanceof z.ZodError) {
-            res.status(400).json({ error: err.errors[0].message });
+            res.status(400).json({ error: err.issues[0]?.message || "Invalid request data" });
             return;
         }
         throw err;

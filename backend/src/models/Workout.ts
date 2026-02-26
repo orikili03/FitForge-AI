@@ -4,6 +4,7 @@ import mongoose, { Schema, type Document } from "mongoose";
 const movementItemSchema = new Schema(
     {
         reps: { type: Number, required: true },
+        isMaxReps: { type: Boolean, default: false },
         name: { type: String, required: true },
         weight: { type: String },   // e.g. "60kg", "135 lb"
         distance: { type: String }, // e.g. "400m", "500m"
@@ -39,6 +40,7 @@ export interface IWorkout extends Document {
         rounds?: number;
         movementItems?: Array<{
             reps: number;
+            isMaxReps?: boolean;
             name: string;
             weight?: string;
             distance?: string;
@@ -52,6 +54,8 @@ export interface IWorkout extends Document {
     timeDomain?: string;
     movementEmphasis?: string[];
     stimulusNote?: string;
+    energySystem?: string;
+    primaryStimulus?: string;
     equipmentPresetName?: string;
     equipmentUsed?: string[];
     completed: boolean;
@@ -86,6 +90,8 @@ const workoutSchema = new Schema<IWorkout>(
         timeDomain: { type: String },
         movementEmphasis: [{ type: String }],
         stimulusNote: { type: String },
+        energySystem: { type: String },
+        primaryStimulus: { type: String },
         equipmentPresetName: { type: String },
         equipmentUsed: [{ type: String }],
 

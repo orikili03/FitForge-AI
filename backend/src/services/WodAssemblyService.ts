@@ -13,21 +13,29 @@ export type WodProtocol =
     | "INTERVAL"
     | "STRENGTH_SINGLE"
     | "STRENGTH_SETS"
-    | "REST_DAY"
-    | "OTHER";
+    | "REST_DAY";
+
+export type WodCategory = "sprint" | "metcon" | "long";
+
+export type RepScheme = number[] | "MAX_REPS";
 
 export interface AssembledWod {
     type: string;
+    protocol: WodProtocol;
+    category: WodCategory;
     duration?: number;
     description: string;
     movements: string[];
     rounds?: number;
     movementItems: Array<{
         reps: number;
+        isMaxReps?: boolean;
         name: string;
         weight?: string;
         distance?: string;
     }>;
+    ladderType?: "ascending" | "descending" | "pyramid";
+    scoringType?: "AMRAP" | "FOR_TIME";
 }
 
 export interface GeneratedWorkout {
@@ -36,6 +44,8 @@ export interface GeneratedWorkout {
     scalingOptions: string[];
     intensityGuidance: string;
     intendedStimulus: string;
+    energySystem: string;
+    primaryStimulus: string;
     timeDomain: string;
     movementEmphasis: string[];
     stimulusNote: string;
@@ -46,8 +56,8 @@ export interface GeneratedWorkout {
 // ─── Template Configuration ───────────────────────────────────────────────
 interface TemplateConfig {
     movementCount: { min: number; max: number };
-    repSchemes: number[][];
-    description: (duration: number, movements: string[]) => string;
+    repSchemes: RepScheme[];
+    description: (duration: number, movements: string[], ladderType?: string, scoringType?: string) => string;
 }
 
 const TEMPLATES: Record<WodProtocol, TemplateConfig> = {
@@ -82,24 +92,20 @@ const TEMPLATES: Record<WodProtocol, TemplateConfig> = {
             [10, 10, 10],
             [20, 15, 10, 5],
         ],
-        description: (_dur, mvs) =>
-            `For Time:\n${mvs.join("\n")}`,
+        description: (dur, mvs, _lt, st) =>
+            st === "FOR_TIME" ? `For Time (Cap ${dur} min):\n${mvs.join("\n")}` : `For Time:\n${mvs.join("\n")}`,
     },
     TABATA: {
         movementCount: { min: 2, max: 4 },
-        repSchemes: [
-            [20, 20],
-            [20, 20, 20],
-            [20, 20, 20, 20],
-        ],
+        repSchemes: ["MAX_REPS"],
         description: (_dur, mvs) =>
             `Tabata (20s work / 10s rest × 8 rounds):\n${mvs.join("\n")}`,
     },
     DEATH_BY: {
         movementCount: { min: 1, max: 2 },
         repSchemes: [[1], [1, 1]],
-        description: (_dur, mvs) =>
-            `Death By:\nStart with 1 rep. Add 1 rep each minute.\n${mvs.join("\n")}`,
+        description: (dur, mvs) =>
+            `Death By (Cap ${dur} min):\nStart with 1 rep. Add 1 rep each minute.\n${mvs.join("\n")}`,
     },
     "21_15_9": {
         movementCount: { min: 2, max: 3 },
@@ -113,8 +119,12 @@ const TEMPLATES: Record<WodProtocol, TemplateConfig> = {
     LADDER: {
         movementCount: { min: 1, max: 2 },
         repSchemes: [[2, 2]],
-        description: (dur, mvs) =>
-            `${dur}-Minute Ladder:\nStart with 2 reps of each. Increase by 2 reps every round.\n${mvs.join("\n")}`,
+        description: (dur, mvs, lt, st) => {
+            const prefix = lt === "ascending" ? "Ascending" : lt === "descending" ? "Descending" : "Pyramid";
+            const suffix = st === "AMRAP" ? `(${dur}-Minute Clock)` : `(For Time - Cap ${dur} min)`;
+            const details = lt === "ascending" ? "Increase by 2 reps every round." : "Decrease reps every round.";
+            return `${prefix} Ladder ${suffix}:\n${details}\n${mvs.join("\n")}`;
+        }
     },
     CHIPPER: {
         movementCount: { min: 5, max: 8 },
@@ -135,187 +145,145 @@ const TEMPLATES: Record<WodProtocol, TemplateConfig> = {
     STRENGTH_SINGLE: {
         movementCount: { min: 1, max: 1 },
         repSchemes: [[1]],
-        description: (_dur, mvs) =>
-            `Max Strength:\nFind a heavy 1-rep max for:\n${mvs.join("\n")}`,
+        description: (dur, mvs) =>
+            `Max Strength (${dur} min Window):\nFind a heavy 1-rep max for:\n${mvs.join("\n")}`,
     },
     STRENGTH_SETS: {
         movementCount: { min: 1, max: 2 },
-        repSchemes: [[5], [5, 5]],
-        description: (_dur, mvs) =>
-            `Strength Sets:\n5 sets of 5 reps (Rest 2-3 mins):\n${mvs.join("\n")}`,
+        repSchemes: [[5], [5, 5], [3], [3, 3]],
+        description: (dur, mvs) =>
+            `Strength Sets (${dur} min Window):\nWorking sets (Rest 2-3 mins):\n${mvs.join("\n")}`,
     },
     REST_DAY: {
         movementCount: { min: 0, max: 0 },
         repSchemes: [[]],
         description: () => "Rest Day: Active recovery or total rest.",
     },
-    OTHER: {
-        movementCount: { min: 1, max: 5 },
-        repSchemes: [[10, 10, 10, 10, 10]],
-        description: (_dur, mvs) => `Modular Workout:\n${mvs.join("\n")}`,
+};
+
+// ─── Stimulus Alignment Metadata ───────────────────────────────────────────
+interface StimulusMetaData {
+    energySystem: string;
+    primaryStimulus: string;
+    stimulusNote: string;
+}
+
+const STIMULUS_METADATA: Record<WodProtocol, StimulusMetaData> = {
+    AMRAP: {
+        energySystem: "Glycolytic / Oxidative",
+        primaryStimulus: "Sustained effort, manage muscle burn.",
+        stimulusNote: "Maintain consistent pacing. Each round should take roughly the same time. Scale to keep moving.",
+    },
+    EMOM: {
+        energySystem: "Mixed / Neuromuscular",
+        primaryStimulus: "Consistent performance under interval fatigue.",
+        stimulusNote: "Each movement should be completable within the minute with rest. If you can't finish, reduce reps.",
+    },
+    FOR_TIME: {
+        energySystem: "Mixed",
+        primaryStimulus: "Task completion under time pressure.",
+        stimulusNote: "Push the pace but maintain form. Break sets strategically — don't go to failure early.",
+    },
+    TABATA: {
+        energySystem: "Phosphagen",
+        primaryStimulus: "Maximal power output, anaerobic capacity.",
+        stimulusNote: "Max effort during 20s work intervals. The 10s rest is sacred — use every second.",
+    },
+    DEATH_BY: {
+        energySystem: "Glycolytic",
+        primaryStimulus: "Threshold management, mental grit.",
+        stimulusNote: "Start smooth. The early minutes should feel easy. The challenge is in the later rounds.",
+    },
+    "21_15_9": {
+        energySystem: "Phosphagen-Glycolytic",
+        primaryStimulus: "High-intensity sprint, maximal turnover.",
+        stimulusNote: "This is a sprint. Unbroken sets early, fast transitions. Aim for sub-10 minutes.",
+    },
+    LADDER: {
+        energySystem: "Mixed",
+        primaryStimulus: "Volume accumulated under fatigue.",
+        stimulusNote: "Focus on smooth transitions. The volume builds quickly. Pace yourself.",
+    },
+    CHIPPER: {
+        energySystem: "Aerobic-Glycolytic",
+        primaryStimulus: "Stamina and mental resilience.",
+        stimulusNote: "A mental and physical test of stamina. Chip away at the large sets. Don't look at the whole list, just the movement in front of you.",
+    },
+    INTERVAL: {
+        energySystem: "Aerobic / Power",
+        primaryStimulus: "Repeatability and recovery.",
+        stimulusNote: "Focus on consistent effort across intervals. Round times should be repeatable.",
+    },
+    STRENGTH_SINGLE: {
+        energySystem: "Phosphagen (Neuromuscular)",
+        primaryStimulus: "Absolute strength development.",
+        stimulusNote: "Focus on mechanics and absolute strength. Take full recovery between attempts.",
+    },
+    STRENGTH_SETS: {
+        energySystem: "Phosphagen / Neuromuscular",
+        primaryStimulus: "Positional strength and volume load.",
+        stimulusNote: "Move the load with perfect form. Rest until you are fully ready for the next set.",
+    },
+    REST_DAY: {
+        energySystem: "Recovery",
+        primaryStimulus: "Homeostasis and adaptation.",
+        stimulusNote: "Recovery is where the adaptation happens. Eat well and stay mobile.",
     },
 };
 
-// ─── Stimulus Notes per Protocol ──────────────────────────────────────────
-const STIMULUS_NOTES: Record<WodProtocol, string> = {
-    AMRAP:
-        "Maintain consistent pacing. Each round should take roughly the same time. Scale to keep moving.",
-    EMOM:
-        "Each movement should be completable within the minute with rest. If you can't finish, reduce reps.",
-    FOR_TIME:
-        "Push the pace but maintain form. Break sets strategically — don't go to failure early.",
-    TABATA:
-        "Max effort during 20s work intervals. The 10s rest is sacred — use every second.",
-    DEATH_BY:
-        "Start smooth. The early minutes should feel easy. The challenge is in the later rounds.",
-    "21_15_9":
-        "This is a sprint. Unbroken sets early, fast transitions. Aim for sub-10 minutes.",
-    LADDER:
-        "Focus on smooth transitions. The early sets will be very fast, but the volume builds quickly. Pace yourself.",
-    CHIPPER:
-        "A mental and physical test of stamina. Chip away at the large sets. Don't look at the whole list, just the movement in front of you.",
-    INTERVAL:
-        "Focus on consistent effort across intervals. Round times should be repeatable.",
-    STRENGTH_SINGLE:
-        "Focus on mechanics and absolute strength. Take full recovery between attempts.",
-    STRENGTH_SETS:
-        "Move the load with perfect form. Rest until you are fully ready for the next set.",
-    REST_DAY:
-        "Recovery is where the adaptation happens. Eat well and stay mobile.",
-    OTHER:
-        "Focus on the intended stimulus. Listen to your body.",
-};
-
-// ─── Warmup Generator (FUTURE FEATURE — see TASKS.md Step 4) ──────────
-// function generateWarmup(movements: FilteredMovement[]): string[] {
-//     const warmup: string[] = [
-//         "2 min light jog or row",
-//         "10 arm circles (each direction)",
-//         "10 leg swings (each side)",
-//     ];
-//
-//     // Add movement-specific prep
-//     const families = new Set(
-//         movements.map(
-//             (m) => (m.movement as unknown as { family?: string }).family ?? ""
-//         )
-//     );
-//
-//     if (families.has("squat")) warmup.push("10 air squats");
-//     if (families.has("press"))
-//         warmup.push("10 PVC pass-throughs", "5 strict press (empty bar)");
-//     if (families.has("pull")) warmup.push("5 scap pull-ups", "5 ring rows");
-//     if (families.has("hinge"))
-//         warmup.push("10 good mornings (empty bar)", "5 Romanian deadlifts");
-//     if (families.has("olympic"))
-//         warmup.push("5 hang muscle cleans (empty bar)", "5 front squats");
-//
-//     return warmup;
-// }
-
-// ─── Scaling Options Generator ────────────────────────────────────────────
-function generateScalingOptions(movements: FilteredMovement[]): string[] {
-    const options: string[] = [];
-
-    for (const fm of movements) {
-        const m = fm.movement as unknown as {
-            name: string;
-            isLoaded: boolean;
-            family?: string;
-        };
-
-        if (m.isLoaded) {
-            options.push(`Reduce load by 20-30%`);
-            break; // Only suggest load reduction once
-        }
-    }
-
-    options.push("Reduce reps by 30%");
-
-    // Movement-specific substitutions
-    for (const fm of movements) {
-        const name = fm.resolvedName.toLowerCase();
-        if (name.includes("pull-up"))
-            options.push("Ring rows instead of pull-ups");
-        if (name.includes("push-up"))
-            options.push("Elevated push-ups (hands on box)");
-        if (name.includes("deadlift"))
-            options.push("Kettlebell deadlift instead of barbell");
-        if (name.includes("run")) options.push("Reduce run distance to 200m");
-        if (name.includes("double-under"))
-            options.push("Single-unders (2:1 ratio)");
-    }
-
-    return [...new Set(options)]; // Deduplicate
-}
-
-// ─── Utility ──────────────────────────────────────────────────────────────
-function pickRandom<T>(arr: T[]): T {
-    return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function shuffleArray<T>(arr: T[]): T[] {
-    const result = [...arr];
-    for (let i = result.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [result[i], result[j]] = [result[j], result[i]];
-    }
-    return result;
-}
-
-/**
- * WodAssemblyService
- *
- * Takes filtered & variance-ranked movements and assembles them into
- * a complete workout using CrossFit-standard templates.
- */
 export class WodAssemblyService {
     /**
-     * Assemble a complete workout.
+     * Entry point: Assembles a workout based on category and available movements.
      */
     assemble(
-        rankedMovements: FilteredMovement[],
-        protocol: string,
-        durationMinutes: number,
-        equipmentPresetName?: string
+        movements: FilteredMovement[],
+        category: WodCategory,
+        presetName?: string
     ): GeneratedWorkout {
-        // Resolve protocol
-        const resolvedProtocol = this.resolveProtocol(protocol, durationMinutes);
-        const template = TEMPLATES[resolvedProtocol];
+        // 1. Pick Protocol and Duration (Evolve-Friendly Dispatcher)
+        const { protocol, duration, ladderType, scoringType } = this.selectProtocolAndDuration(category);
 
-        // Select movements (top-ranked, within template limits)
+        const config = TEMPLATES[protocol];
+
+        // 2. Select Movements (Intelligent Pairing Filter)
+        const selected: FilteredMovement[] = [];
         const count = Math.min(
-            Math.max(template.movementCount.min, 3),
-            template.movementCount.max,
-            rankedMovements.length
+            movements.length,
+            Math.floor(Math.random() * (config.movementCount.max - config.movementCount.min + 1)) +
+            config.movementCount.min
         );
 
-        // Take top candidates, shuffled for variety within the top tier
-        const topCandidates = rankedMovements.slice(
-            0,
-            Math.min(count * 2, rankedMovements.length)
-        );
-        const selected = shuffleArray(topCandidates).slice(0, count);
+        let candidates = [...movements];
+        for (let i = 0; i < count; i++) {
+            if (candidates.length === 0) break;
 
-        // Pick rep scheme
-        const validSchemes = template.repSchemes.filter(
-            (s) => s.length >= count
-        );
-        const repScheme =
-            validSchemes.length > 0
-                ? pickRandom(validSchemes)
-                : template.repSchemes[0];
+            // Pick a movement
+            const idx = Math.floor(Math.random() * candidates.length);
+            const picked = candidates[idx];
+            selected.push(picked);
 
-        // Build movement items
+            // Filter out conflicting families for the next pick
+            candidates = this.filterConflictingMovements(candidates, selected);
+        }
+
+        // 3. Pick Rep Scheme
+        const repScheme = config.repSchemes[Math.floor(Math.random() * config.repSchemes.length)];
+
+        // 4. Build movement items
         const movementItems = selected.map((fm, i) => {
-            const reps = repScheme[i] ?? repScheme[0];
+            const isMaxReps = repScheme === "MAX_REPS";
+            // For Strength/Ladders, reps are defined differently, but we store base reps or 0
+            const reps = isMaxReps ? 0 : (repScheme as number[])[i] ?? (repScheme as number[])[0];
+
             const item: {
                 reps: number;
+                isMaxReps: boolean;
                 name: string;
                 weight?: string;
                 distance?: string;
             } = {
                 reps,
+                isMaxReps,
                 name: fm.resolvedName,
             };
 
@@ -327,122 +295,140 @@ export class WodAssemblyService {
         });
 
         const movementStrings = movementItems.map((item) => {
-            let s = `${item.reps} ${item.name}`;
+            const qtyLabel = item.isMaxReps ? "Max Reps" : item.reps.toString();
+            // Special string for Strength sets since they have fixed schemas like 5x5
+            if (protocol === "STRENGTH_SETS") {
+                const setLabel = repScheme[0] === 5 ? "5 sets of 5" : "3 sets of 3";
+                return `${setLabel} ${item.name} (${item.weight || "Heavy"})`;
+            }
+
+            let s = `${qtyLabel} ${item.name}`;
             if (item.weight) s += ` (${item.weight})`;
             if (item.distance) s += ` ${item.distance}`;
             return s;
         });
 
-        // Build WOD description
-        const description = template.description(durationMinutes, movementStrings);
+        const wod: AssembledWod = {
+            type: protocol,
+            protocol,
+            category,
+            duration,
+            description: config.description(duration, movementStrings, ladderType, scoringType),
+            movements: selected.map((fm) => fm.movement.name),
+            movementItems,
+            ladderType,
+            scoringType
+        };
 
-        // Determine rounds for EMOM/FOR_TIME
-        let rounds: number | undefined;
-        if (resolvedProtocol === "EMOM") {
-            rounds = Math.floor(durationMinutes / count) || durationMinutes;
-        } else if (resolvedProtocol === "FOR_TIME") {
-            rounds = 3; // default 3 rounds
-        } else if (resolvedProtocol === "21_15_9") {
-            rounds = 3;
-        }
-
-        // Collect equipment used
-        const equipmentUsed = [
-            ...new Set(
-                selected.flatMap(
-                    (fm) =>
-                        (fm.movement as unknown as { equipmentRequired: string[] })
-                            .equipmentRequired ?? []
-                )
-            ),
-        ];
-
-        // Determine modality emphasis
-        const movementEmphasis = [
-            ...new Set(
-                selected.map(
-                    (fm) =>
-                        (fm.movement as unknown as { modality: string }).modality
-                )
-            ),
-        ];
-
-        // Time domain classification
-        const timeDomain =
-            durationMinutes <= 12
-                ? "Short (Sprint)"
-                : durationMinutes <= 22
-                    ? "Medium (Sustained)"
-                    : "Long (Aerobic)";
-
-        // Intensity guidance
-        const intensityGuidance =
-            durationMinutes <= 12
-                ? "High intensity — push the pace, brief rest only."
-                : durationMinutes <= 22
-                    ? "Moderate-high — find a sustainable rhythm."
-                    : "Moderate — pace yourself, this is a longer effort.";
+        const meta = STIMULUS_METADATA[protocol];
+        const movementEmphasis = Array.from(new Set(selected.map((fm) => fm.movement.modality)));
+        const timeDomain = category === "sprint" ? "< 7m" : category === "metcon" ? "7-20m" : "20m+";
+        const equipmentUsed = Array.from(new Set(selected.flatMap((fm) => fm.movement.equipmentRequired)));
 
         return {
-            wod: {
-                type: resolvedProtocol.replace("_", "-"),
-                duration: durationMinutes,
-                description,
-                movements: movementStrings,
-                rounds,
-                movementItems,
-            },
-            warmup: [], // generateWarmup(selected),
-            scalingOptions: generateScalingOptions(selected),
-            intensityGuidance,
-            intendedStimulus: `${timeDomain} — ${movementEmphasis
-                .map((m) =>
-                    m === "G"
-                        ? "Gymnastics"
-                        : m === "W"
-                            ? "Weightlifting"
-                            : "Monostructural"
-                )
-                .join(" + ")}`,
+            wod,
+            warmup: ["5 min Light Cardio", "Dynamic Mobility", "Movement Prep"],
+            scalingOptions: ["Reduce Load", "Modify Complexity", "Scale Volume"],
+            intensityGuidance: "Aim for consistent movememt and high relative intensity.",
+            intendedStimulus: `${timeDomain} — ${movementEmphasis.map(m => m === 'G' ? 'Gymnastics' : m === 'W' ? 'Weightlifting' : 'Monostructural').join(" + ")}`,
+            energySystem: meta.energySystem,
+            primaryStimulus: meta.primaryStimulus,
             timeDomain,
             movementEmphasis,
-            stimulusNote: STIMULUS_NOTES[resolvedProtocol],
-            equipmentPresetName,
+            stimulusNote: meta.stimulusNote,
+            equipmentPresetName: presetName,
             equipmentUsed,
         };
     }
 
     /**
-     * Resolve "recommended" protocol to an actual protocol based on duration.
+     * Evolve-friendly Dispatcher: Picks protocol and duration limits based on category.
+     * Isolate this so future AI/Data systems can replace it easily.
      */
-    private resolveProtocol(
-        protocol: string,
-        durationMinutes: number
-    ): WodProtocol {
-        if (protocol !== "recommended") {
-            // Validate it's a known protocol
-            const valid: WodProtocol[] = [
-                "AMRAP",
-                "EMOM",
-                "FOR_TIME",
-                "TABATA",
-                "DEATH_BY",
-                "21_15_9",
+    private selectProtocolAndDuration(category: WodCategory): {
+        protocol: WodProtocol;
+        duration: number;
+        ladderType?: "ascending" | "descending" | "pyramid";
+        scoringType?: "AMRAP" | "FOR_TIME";
+    } {
+        if (category === "sprint") {
+            const protocols: Array<{ p: WodProtocol; w: number }> = [
+                { p: "21_15_9", w: 30 },
+                { p: "TABATA", w: 30 },
+                { p: "FOR_TIME", w: 20 },
+                { p: "STRENGTH_SINGLE", w: 15 },
+                { p: "LADDER", w: 5 }, // Reduced per user feedback
             ];
-            if (valid.includes(protocol as WodProtocol)) {
-                return protocol as WodProtocol;
-            }
-            return "AMRAP"; // fallback
+            const p = this.weightedPick(protocols);
+            const duration = p === "TABATA" ? 4 : p === "STRENGTH_SINGLE" ? 7 : 7; // Cap
+            return {
+                protocol: p,
+                duration,
+                ladderType: p === "LADDER" ? "ascending" : undefined,
+                scoringType: p === "LADDER" ? "AMRAP" : "FOR_TIME"
+            };
         }
 
-        // "Recommended" — pick based on duration
-        if (durationMinutes <= 10) {
-            return pickRandom(["TABATA", "EMOM", "21_15_9", "LADDER"]);
-        } else if (durationMinutes <= 20) {
-            return pickRandom(["AMRAP", "EMOM", "FOR_TIME", "LADDER"]);
-        } else {
-            return pickRandom(["AMRAP", "FOR_TIME", "CHIPPER"]);
+        if (category === "metcon") {
+            const protocols: Array<{ p: WodProtocol; w: number }> = [
+                { p: "AMRAP", w: 30 },
+                { p: "FOR_TIME", w: 30 },
+                { p: "EMOM", w: 20 },
+                { p: "DEATH_BY", w: 10 }, // Reduced
+                { p: "LADDER", w: 10 }, // Reduced
+            ];
+            const p = this.weightedPick(protocols);
+            const duration = [8, 10, 12, 15, 18, 20][Math.floor(Math.random() * 6)];
+            return {
+                protocol: p,
+                duration,
+                ladderType: p === "LADDER" ? "ascending" : undefined,
+                scoringType: p === "LADDER" ? "AMRAP" : p === "FOR_TIME" ? "FOR_TIME" : "AMRAP"
+            };
         }
+
+        // Long / Aerobic
+        const protocols: Array<{ p: WodProtocol; w: number }> = [
+            { p: "CHIPPER", w: 35 },
+            { p: "AMRAP", w: 25 },
+            { p: "INTERVAL", w: 20 },
+            { p: "STRENGTH_SETS", w: 15 },
+            { p: "LADDER", w: 5 }, // Reduced
+        ];
+        const p = this.weightedPick(protocols);
+        const duration = [25, 30, 40][Math.floor(Math.random() * 3)];
+        return {
+            protocol: p,
+            duration,
+            ladderType: p === "LADDER" ? (Math.random() > 0.5 ? "descending" : "pyramid") : undefined,
+            scoringType: p === "LADDER" ? "FOR_TIME" : "AMRAP"
+        };
+    }
+
+    private weightedPick<T>(options: Array<{ p: T; w: number }>): T {
+        const total = options.reduce((sum, o) => sum + o.w, 0);
+        let rand = Math.random() * total;
+        for (const o of options) {
+            if (rand < o.w) return o.p;
+            rand -= o.w;
+        }
+        return options[0].p;
+    }
+
+    /**
+     * Intelligent Movement Pairing: Avoids duplicate joint/pattern overload.
+     */
+    private filterConflictingMovements(
+        candidates: FilteredMovement[],
+        selected: FilteredMovement[]
+    ): FilteredMovement[] {
+        const usedFamilies = new Set(
+            selected.map((fm) => (fm.movement as any).family).filter((f) => !!f)
+        );
+        return candidates.filter((m) => {
+            const family = (m.movement as any).family;
+            return !family || !usedFamilies.has(family);
+        });
     }
 }
 

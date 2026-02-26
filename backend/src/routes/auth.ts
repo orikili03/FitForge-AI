@@ -1,10 +1,26 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { rateLimit } from "express-rate-limit";
 import { User } from "../models/User.js";
-import { signToken } from "../middleware/auth.js";
+import { signToken, setAuthCookie, clearAuthCookie, authGuard } from "../middleware/auth.js";
+import { env } from "../config/env.js";
 
 const router = Router();
+
+// ─── Rate Limiters ────────────────────────────────────────────────────────
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // Limit each IP to 5 requests per windowMs
+    message: { error: "Too many login/registration attempts, please try again after 15 minutes" },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Protect all auth routes with the limiter (disabled in development)
+if (env.NODE_ENV !== "development") {
+    router.use(authLimiter);
+}
 
 // ─── Validation Schemas ───────────────────────────────────────────────────
 const registerSchema = z.object({
@@ -36,12 +52,14 @@ router.post("/register", async (req, res) => {
         // Create user
         const user = await User.create({ email, passwordHash });
 
-        // Return token (frontend expects { token } on success)
+        // Set HttpOnly cookie (JWT never exposed to client JS)
         const token = signToken(user.id, user.email);
-        res.status(201).json({ token });
+        setAuthCookie(res, token);
+
+        res.status(201).json({ user: { id: user.id, email: user.email } });
     } catch (err) {
         if (err instanceof z.ZodError) {
-            res.status(400).json({ error: err.errors[0].message });
+            res.status(400).json({ error: err.issues[0]?.message || "Invalid request data" });
             return;
         }
         throw err;
@@ -65,15 +83,36 @@ router.post("/login", async (req, res) => {
             return;
         }
 
+        // Set HttpOnly cookie (JWT never exposed to client JS)
         const token = signToken(user.id, user.email);
-        res.json({ token });
+        setAuthCookie(res, token);
+
+        res.json({ user: { id: user.id, email: user.email } });
     } catch (err) {
         if (err instanceof z.ZodError) {
-            res.status(400).json({ error: err.errors[0].message });
+            res.status(400).json({ error: err.issues[0]?.message || "Invalid request data" });
             return;
         }
         throw err;
     }
 });
 
+// ─── POST /auth/logout ───────────────────────────────────────────────────
+router.post("/logout", (_req, res) => {
+    clearAuthCookie(res);
+    res.json({ success: true });
+});
+
+// ─── GET /auth/me — Lightweight session check ────────────────────────────
+router.get("/me", authGuard, async (req, res) => {
+    const user = await User.findById(req.userId).select("email");
+    if (!user) {
+        clearAuthCookie(res);
+        res.status(401).json({ error: "User not found" });
+        return;
+    }
+    res.json({ user: { id: user.id, email: user.email } });
+});
+
 export default router;
+

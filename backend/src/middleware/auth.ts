@@ -3,9 +3,11 @@ import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 
 // ─── Evolution-Friendly Auth Guard ────────────────────────────────────────
-// Today: JWT verification from Authorization header.
-// Tomorrow: Swap to Clerk/Auth0 webhook verification by changing only this file.
+// Reads JWT from HttpOnly cookie first, then Authorization header as fallback.
+// Cookie-based auth prevents XSS token theft; header fallback supports API tools.
 // ──────────────────────────────────────────────────────────────────────────
+
+export const AUTH_COOKIE_NAME = "wodlab_session";
 
 export interface AuthPayload {
     sub: string; // userId
@@ -22,14 +24,21 @@ declare global {
 }
 
 export function authGuard(req: Request, res: Response, next: NextFunction): void {
-    const header = req.headers.authorization;
+    // 1. Try HttpOnly cookie first (secure, browser-based flow)
+    let token: string | undefined = req.cookies?.[AUTH_COOKIE_NAME];
 
-    if (!header || !header.startsWith("Bearer ")) {
-        res.status(401).json({ error: "Missing or invalid authorization header" });
-        return;
+    // 2. Fallback to Authorization header (API tools, mobile, etc.)
+    if (!token) {
+        const header = req.headers.authorization;
+        if (header && header.startsWith("Bearer ")) {
+            token = header.slice(7);
+        }
     }
 
-    const token = header.slice(7); // Remove "Bearer "
+    if (!token) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+    }
 
     try {
         const decoded = jwt.verify(token, env.JWT_SECRET) as AuthPayload;
@@ -47,3 +56,29 @@ export function signToken(userId: string, email: string): string {
         expiresIn: env.JWT_EXPIRES_IN,
     } as jwt.SignOptions);
 }
+
+/**
+ * Set the JWT as an HttpOnly cookie on the response.
+ */
+export function setAuthCookie(res: Response, token: string): void {
+    res.cookie(AUTH_COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days — matches JWT_EXPIRES_IN default
+        path: "/",
+    });
+}
+
+/**
+ * Clear the auth cookie (logout).
+ */
+export function clearAuthCookie(res: Response): void {
+    res.clearCookie(AUTH_COOKIE_NAME, {
+        httpOnly: true,
+        secure: env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+    });
+}
+

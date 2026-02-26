@@ -1,15 +1,17 @@
 import axios from "axios";
-import { getAuthToken } from "./authToken";
 
-const baseURL =
+// Base URL for API requests — all backend routes are prefixed with /api
+const envBase =
     typeof import.meta.env.VITE_API_BASE_URL === "string" && import.meta.env.VITE_API_BASE_URL
-        ? import.meta.env.VITE_API_BASE_URL
+        ? import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, "")
         : "";
 
 export const apiClient = axios.create({
-    baseURL,
+    baseURL: `${envBase}/api`,
+    withCredentials: true, // Send/receive HttpOnly cookies automatically
 });
 
+// Error response interceptor — normalize error messages
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -18,11 +20,3 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
     }
 );
-
-apiClient.interceptors.request.use((config) => {
-    const token = getAuthToken();
-    if (token) {
-        config.headers.set("Authorization", `Bearer ${token}`);
-    }
-    return config;
-});

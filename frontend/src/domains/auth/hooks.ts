@@ -1,47 +1,48 @@
 import { useMutation } from '@tanstack/react-query';
 import type { UseMutationResult } from '@tanstack/react-query';
 import { apiClient } from '../../lib/apiClient';
-import { useAuthToken } from './AuthTokenContext';
+import { useAuth } from './AuthTokenContext';
+import type { AuthUser } from './AuthTokenContext';
 
 /**
- * Simple type for the login response payload.
+ * Auth response shape — backend sets HttpOnly cookie and returns user info.
  */
-export type LoginResponse = {
-    token: string;
+type AuthResponse = {
+    user: AuthUser;
 };
 
 /**
  * Hook for logging in.
- * Expects { email, password } and on success stores the token in context.
+ * The JWT is set as an HttpOnly cookie by the backend — never touches JS.
  */
-export function useLogin(): UseMutationResult<LoginResponse, Error, { email: string; password: string }, unknown> {
-    const { setToken } = useAuthToken();
+export function useLogin(): UseMutationResult<AuthResponse, Error, { email: string; password: string }, unknown> {
+    const { onLoginSuccess } = useAuth();
 
-    return useMutation<LoginResponse, Error, { email: string; password: string }>({
+    return useMutation<AuthResponse, Error, { email: string; password: string }>({
         mutationFn: async (credentials) => {
-            const response = await apiClient.post<LoginResponse>('/auth/login', credentials);
+            const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
             return response.data;
         },
         onSuccess: (data) => {
-            setToken(data.token);
+            onLoginSuccess(data.user);
         },
     });
 }
 
 /**
  * Hook for registering a new user.
+ * The JWT is set as an HttpOnly cookie by the backend — never touches JS.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useRegister(): UseMutationResult<any, Error, { email: string; password: string }, unknown> {
-    const { setToken } = useAuthToken();
+export function useRegister(): UseMutationResult<AuthResponse, Error, { email: string; password: string }, unknown> {
+    const { onLoginSuccess } = useAuth();
 
-    return useMutation<any, Error, { email: string; password: string }>({
+    return useMutation<AuthResponse, Error, { email: string; password: string }>({
         mutationFn: async (payload) => {
-            const response = await apiClient.post('/auth/register', payload);
+            const response = await apiClient.post<AuthResponse>('/auth/register', payload);
             return response.data;
         },
         onSuccess: (data) => {
-            if (data?.token) setToken(data.token);
+            onLoginSuccess(data.user);
         },
     });
 }
