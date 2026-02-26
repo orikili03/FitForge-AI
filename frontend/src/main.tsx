@@ -22,7 +22,7 @@ ReactDOM.createRoot(rootEl).render(
             <App />
           </AuthTokenProvider>
         </BrowserRouter>
-        <ReactQueryDevtools initialIsOpen={false} />
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
     </AppErrorBoundary>
   </React.StrictMode>

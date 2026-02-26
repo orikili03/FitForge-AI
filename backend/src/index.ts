@@ -4,6 +4,7 @@ import { fileURLToPath } from "url";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
+import compression from "compression";
 import { env } from "./config/env.js";
 import { connectDB } from "./config/db.js";
 import { existsSync } from "fs";
@@ -19,6 +20,11 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // ─── Global Middleware ────────────────────────────────────────────────────
+if (env.NODE_ENV === "production") {
+    app.set("trust proxy", 1); // Trust first-hop proxy (Render/Vercel/Cloudflare)
+}
+
+app.use(compression()); // Compress all responses
 app.use(helmet()); // Set security-related HTTP headers
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(express.json());
@@ -40,9 +46,17 @@ app.use("/api", apiRouter);
 // ─── Serve Frontend (SPA Fallback) ────────────────────────────────────────
 const frontendPath = path.resolve(__dirname, "../../frontend/dist");
 const hasFrontend = existsSync(frontendPath);
+const indexHtmlPath = path.join(frontendPath, "index.html");
+const hasIndexHtml = hasFrontend && existsSync(indexHtmlPath);
 
 if (hasFrontend) {
-    app.use(express.static(frontendPath));
+    app.use(
+        express.static(frontendPath, {
+            maxAge: "1d",
+            etag: true,
+            lastModified: true,
+        })
+    );
 } else {
     console.log("ℹ️ Frontend dist not found. Backend running in API-only mode.");
 }
@@ -53,8 +67,8 @@ app.get("*path", (req, res, next) => {
         return next();
     }
 
-    if (hasFrontend && existsSync(path.join(frontendPath, "index.html"))) {
-        res.sendFile(path.join(frontendPath, "index.html"));
+    if (hasIndexHtml) {
+        res.sendFile(indexHtmlPath);
     } else {
         res.status(404).json({ error: "Not Found", message: "Frontend assets not available on this server." });
     }
