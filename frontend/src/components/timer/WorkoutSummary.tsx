@@ -7,6 +7,7 @@ import type { WorkoutSessionResult } from "../../domains/timer/api";
 import type { WorkoutResponse, WorkoutSpec } from "../../domains/workouts/api";
 import { Button } from "../ui";
 import { cn } from "../../lib/utils";
+import { formatProtocol } from "../../lib/formatters";
 
 interface WorkoutSummaryProps {
     workout: WorkoutResponse;
@@ -61,7 +62,7 @@ export function WorkoutSummary({ workout, result, onClose }: WorkoutSummaryProps
                 </div>
                 <h2 className="text-2xl font-bold text-amber-400">Workout Complete!</h2>
                 <p className="text-sm text-ds-text-muted">
-                    {workout.wod.type} · {workout.wod.description}
+                    {formatProtocol(workout.wod.type)} · {workout.wod.description}
                 </p>
             </div>
 

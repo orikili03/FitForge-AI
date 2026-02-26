@@ -6,6 +6,7 @@ import {
     Minus,
     BarChart3,
     Waves,
+    Frame,
     type LucideIcon,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ export const EQUIPMENT_CATALOG: EquipmentCatalogItem[] = [
     { id: "pullup_bar", label: "Pull-up bar", category: "Gymnastics", Icon: BarChart3 },
     { id: "rings", label: "Rings", category: "Gymnastics", Icon: Circle },
     { id: "box", label: "Box", category: "Gymnastics", Icon: Package },
+    { id: "rack", label: "Squat Rack / Rig", category: "Strength", Icon: Frame },
     { id: "barbell", label: "Barbell", category: "Strength", Icon: Dumbbell, weightDependent: true },
     { id: "kettlebells", label: "Kettlebells", category: "Strength", Icon: Dumbbell, weightDependent: true },
     { id: "dumbbells", label: "Dumbbells", category: "Strength", Icon: Dumbbell, weightDependent: true },
@@ -51,6 +53,7 @@ export const BUILTIN_PRESETS: BuiltinPreset[] = [
         name: "Home / Garage",
         description: "Barbell + basics",
         selected: [
+            { id: "rack" },
             { id: "barbell" },
             { id: "pullup_bar" },
             { id: "kettlebells" },

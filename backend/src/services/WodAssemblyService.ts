@@ -353,14 +353,14 @@ export class WodAssemblyService {
     } {
         if (category === "sprint") {
             const protocols: Array<{ p: WodProtocol; w: number }> = [
-                { p: "21_15_9", w: 30 },
-                { p: "TABATA", w: 30 },
+                { p: "21_15_9", w: 25 },
+                { p: "TABATA", w: 25 },
                 { p: "FOR_TIME", w: 20 },
                 { p: "STRENGTH_SINGLE", w: 15 },
-                { p: "LADDER", w: 5 }, // Reduced per user feedback
+                { p: "LADDER", w: 15 },
             ];
             const p = this.weightedPick(protocols);
-            const duration = p === "TABATA" ? 4 : p === "STRENGTH_SINGLE" ? 7 : 7; // Cap
+            const duration = p === "TABATA" ? 4 : p === "STRENGTH_SINGLE" ? 7 : 7; // Fixed or 7m cap
             return {
                 protocol: p,
                 duration,
@@ -371,11 +371,11 @@ export class WodAssemblyService {
 
         if (category === "metcon") {
             const protocols: Array<{ p: WodProtocol; w: number }> = [
-                { p: "AMRAP", w: 30 },
-                { p: "FOR_TIME", w: 30 },
-                { p: "EMOM", w: 20 },
-                { p: "DEATH_BY", w: 10 }, // Reduced
-                { p: "LADDER", w: 10 }, // Reduced
+                { p: "AMRAP", w: 24 },
+                { p: "EMOM", w: 28 },
+                { p: "FOR_TIME", w: 28 },
+                { p: "DEATH_BY", w: 10 },
+                { p: "LADDER", w: 10 },
             ];
             const p = this.weightedPick(protocols);
             const duration = [8, 10, 12, 15, 18, 20][Math.floor(Math.random() * 6)];
@@ -389,19 +389,19 @@ export class WodAssemblyService {
 
         // Long / Aerobic
         const protocols: Array<{ p: WodProtocol; w: number }> = [
-            { p: "CHIPPER", w: 35 },
-            { p: "AMRAP", w: 25 },
+            { p: "CHIPPER", w: 30 },
+            { p: "AMRAP", w: 20 },
             { p: "INTERVAL", w: 20 },
             { p: "STRENGTH_SETS", w: 15 },
-            { p: "LADDER", w: 5 }, // Reduced
+            { p: "LADDER", w: 15 },
         ];
         const p = this.weightedPick(protocols);
         const duration = [25, 30, 40][Math.floor(Math.random() * 3)];
         return {
             protocol: p,
             duration,
-            ladderType: p === "LADDER" ? (Math.random() > 0.5 ? "descending" : "pyramid") : undefined,
-            scoringType: p === "LADDER" ? "FOR_TIME" : "AMRAP"
+            ladderType: p === "LADDER" ? (Math.random() > 0.5 ? "pyramid" : "descending") : undefined,
+            scoringType: p === "LADDER" ? "FOR_TIME" : p === "CHIPPER" ? "FOR_TIME" : "AMRAP"
         };
     }
 

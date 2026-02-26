@@ -4,6 +4,7 @@ import { Search, Eye, X, Trash2, Loader2 } from "lucide-react";
 import { useWorkoutHistoryInfinite, useClearWorkoutHistory, useDeleteWorkout } from "../domains/workouts/hooks";
 import { expandForDisplay } from "../lib/abbreviations";
 import { WodBlock } from "../components/wod/WodBlock";
+import { formatProtocol } from "../lib/formatters";
 import type { WorkoutResponse } from "../domains/workouts/api";
 
 function formatCompletionTime(seconds: number): string {
@@ -179,7 +180,7 @@ export function HistoryPage() {
                         >
                             <option value="">All types</option>
                             {wodTypes.map((t) => (
-                                <option key={t} value={t}>{t}</option>
+                                <option key={t} value={t}>{formatProtocol(t)}</option>
                             ))}
                         </select>
                         <select
@@ -231,7 +232,7 @@ export function HistoryPage() {
                             <li key={w.id} className="py-3 flex items-center justify-between gap-3">
                                 <div>
                                     <div className="font-medium text-ds-text">
-                                        {w.wod.type}
+                                        {formatProtocol(w.wod.type)}
                                         {(w.wod.duration ?? w.durationMinutes) != null && (w.wod.duration ?? w.durationMinutes) > 0 && (
                                             <> • {(w.wod.duration ?? w.durationMinutes)} min</>
                                         )}
@@ -389,7 +390,7 @@ export function HistoryPage() {
                                 Are you sure you want to delete this workout?
                             </p>
                             <p className="text-center text-ds-body-sm text-ds-text mb-6">
-                                <strong>{confirmDeleteWorkout.wod.type}</strong>
+                                <strong>{formatProtocol(confirmDeleteWorkout.wod.type)}</strong>
                                 {" · "}
                                 {new Date(confirmDeleteWorkout.date).toLocaleDateString(undefined, {
                                     weekday: "short",
@@ -446,7 +447,7 @@ export function HistoryPage() {
                         >
                             <div className="flex items-start justify-between gap-3 mb-4">
                                 <h2 id="workout-detail-title" className="text-lg font-semibold text-ds-text">
-                                    {viewWorkout.wod.type}
+                                    {formatProtocol(viewWorkout.wod.type)}
                                     {(viewWorkout.wod.duration ?? viewWorkout.durationMinutes) != null && (viewWorkout.wod.duration ?? viewWorkout.durationMinutes) > 0 && (
                                         <> • {(viewWorkout.wod.duration ?? viewWorkout.durationMinutes)} min</>
                                     )}

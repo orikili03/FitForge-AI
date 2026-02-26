@@ -14,6 +14,7 @@ import {
 import type { WorkoutSessionResult } from "../../domains/timer/api";
 import type { WorkoutResponse } from "../../domains/workouts/api";
 import { cn } from "../../lib/utils";
+import { formatProtocol } from "../../lib/formatters";
 
 const WORK_COLOR = "#fbbf24"; // lighter tinted amber
 const REST_COLOR = "#60a5fa";
@@ -184,7 +185,7 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
                         {countdownNum}
                     </div>
                     <p className="text-sm text-ds-text-secondary">
-                        {workout.wod.type}
+                        {formatProtocol(workout.wod.type)}
                         {workout.wod.duration != null && workout.wod.duration > 0 && (
                             <> · {workout.wod.duration} min</>
                         )}
@@ -199,7 +200,7 @@ export function TimerOverlay({ workout, onClose }: TimerOverlayProps) {
                     <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-5 py-4">
                         <div>
                             <p className="text-xs uppercase tracking-widest font-semibold text-ds-text-secondary">
-                                {workout.wod.type}
+                                {formatProtocol(workout.wod.type)}
                             </p>
                             {workout.wod.duration != null && workout.wod.duration > 0 && (
                                 <p className="text-xs text-ds-text-muted">{workout.wod.duration} min</p>

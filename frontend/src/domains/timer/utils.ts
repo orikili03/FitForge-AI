@@ -129,7 +129,7 @@ export function formatTime(totalSeconds: number): string {
 /** Label for the phase shown inside the ring */
 export function getPhaseBadge(config: TimerConfig, phase: "WORK" | "REST"): string {
     if (config.type === "AMRAP") return "AMRAP";
-    if (config.type === "FOR_TIME") return "FOR TIME";
+    if (config.type === "FOR_TIME") return "For Time";
     return phase;
 }
 

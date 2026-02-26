@@ -1,5 +1,6 @@
 import { ProtocolTooltip } from "./ProtocolTooltip";
 import { expandForDisplay } from "../../lib/abbreviations";
+import { formatProtocol } from "../../lib/formatters";
 
 /** Time-capped protocols: show duration (e.g. EMOM 24, AMRAP 20). For Time / 21-15-9 have no fixed duration. */
 const TIME_CAPPED_PROTOCOLS = ["AMRAP", "EMOM", "TABATA", "DEATH BY"];
@@ -16,14 +17,15 @@ function getProtocolHeading(
     durationMinutes: number,
     rounds?: number
 ): string {
+    const formatted = formatProtocol(type);
     if (rounds != null && rounds > 0) {
         return `${rounds} Rounds for time`;
     }
     const showDuration = TIME_CAPPED_PROTOCOLS.some((p) =>
-        type.toUpperCase().startsWith(p)
+        type.toUpperCase().startsWith(p) || formatted.toUpperCase().startsWith(p)
     );
-    if (showDuration && durationMinutes > 0) return `${type} ${durationMinutes}`;
-    return type;
+    if (showDuration && durationMinutes > 0) return `${formatted} ${durationMinutes}`;
+    return formatted;
 }
 
 function parseLegacyMovement(
@@ -72,7 +74,7 @@ export function WodBlock({
     return (
         <div className={className}>
             <h2 className="text-ds-heading font-semibold text-amber-400 tracking-tight mb-3">
-                <ProtocolTooltip protocolLabel={type}>{heading}:</ProtocolTooltip>
+                <ProtocolTooltip protocolLabel={formatProtocol(type)}>{heading}:</ProtocolTooltip>
             </h2>
             <ul className="space-y-1.5">
                 {useStructured

@@ -10,20 +10,18 @@ const PROTOCOL_EXPLANATIONS: Record<string, string> = {
         "Every minute on the minute. Perform the work at the start of each minute; rest the remainder.",
     AMRAP:
         "As many rounds or reps as possible within the time cap.",
-    TABATA:
+    Tabata:
         "20 seconds work, 10 seconds rest, 8 rounds. High-intensity intervals.",
     "Death By":
         "Add one rep each round. Start at 1, then 2, then 3… until you can't complete the round within the minute.",
-    "FOR-TIME": "Rounds for time. Complete a set number of rounds as fast as possible.",
     "21-15-9":
         "Descending rep scheme. Complete 21, then 15, then 9 reps of each movement for time.",
-    LADDER: "Continuous rep increment (e.g. 2, 4, 6...) until the time cap or failure.",
-    CHIPPER: "A long series of diverse movements to be 'chipped' away at sequentially.",
-    INTERVAL: "Fixed work windows followed by fixed rest, focusing on repeatability.",
-    "STRENGTH-SINGLE": "Max effort weightlifting focused on absolute force production (1RM).",
-    "STRENGTH-SETS": "Sub-maximal sets (e.g. 5x5) focused on volume and positional strength.",
-    STRENGTH: "Max effort weightlifting focused on absolute force production.",
-    "REST-DAY": "Active recovery to support tissue repair and long-term adaptation.",
+    Ladder: "Continuous rep increment (e.g. 2, 4, 6...) until the time cap or failure.",
+    Chipper: "A long series of diverse movements to be 'chipped' away at sequentially.",
+    Intervals: "Fixed work windows followed by fixed rest, focusing on repeatability.",
+    "Max Strength": "Max effort weightlifting focused on absolute force production (1RM).",
+    "Strength Sets": "Sub-maximal sets (e.g. 5x5) focused on volume and positional strength.",
+    "Rest Day": "Active recovery to support tissue repair and long-term adaptation.",
     OTHER: "Mixed methodology or modular training format.",
 };
 
