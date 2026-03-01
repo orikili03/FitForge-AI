@@ -110,8 +110,7 @@ const TEMPLATES: Record<WodProtocol, TemplateConfig> = {
     "21_15_9": {
         movementCount: { min: 2, max: 3 },
         repSchemes: [
-            [21, 21],
-            [21, 21, 21],
+            [21, 15, 9],
         ],
         description: (_dur, mvs) =>
             `21-15-9:\n${mvs.join("\n")}`,

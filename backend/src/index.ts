@@ -13,6 +13,7 @@ import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/users.js";
 import movementRoutes from "./routes/movements.js";
 import workoutRoutes from "./routes/workouts.js";
+import { movementCacheService } from "./services/MovementCacheService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -80,6 +81,10 @@ app.use(errorHandler);
 // ─── Start Server ─────────────────────────────────────────────────────────
 async function start() {
     await connectDB();
+
+    // Eagerly warm up the movement cache
+    await movementCacheService.init();
+
     app.listen(env.PORT, () => {
         console.log(`🚀 WODLab V2 backend running on port ${env.PORT}`);
     });

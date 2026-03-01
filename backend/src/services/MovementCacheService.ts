@@ -13,6 +13,18 @@ export class MovementCacheService {
     private readonly TTL_MS = 1000 * 60 * 60; // 1 hour
 
     /**
+     * Initialize the cache by fetching all movements from the DB.
+     * Use this at server startup to eagerly load the cache.
+     */
+    async init(): Promise<void> {
+        console.log("🔄 Initializing Movement Library Cache...");
+        // Select all fields except __v to keep RAM footprint lean
+        this.cache = await Movement.find({}, { __v: 0 }).lean() as unknown as IMovement[];
+        this.lastFetch = Date.now();
+        console.log(`✅ Cache Primed: ${this.cache.length} movements loaded.`);
+    }
+
+    /**
      * Get all movements, using cache if available and fresh.
      */
     async getAll(): Promise<IMovement[]> {
@@ -21,8 +33,8 @@ export class MovementCacheService {
             return this.cache;
         }
 
-        console.log("🔄 Movement Library Cache MISS - Fetching from DB...");
-        this.cache = await Movement.find({}).lean() as unknown as IMovement[];
+        console.log("🔄 Movement Library Cache Refresh - Fetching from DB...");
+        this.cache = await Movement.find({}, { __v: 0 }).lean() as unknown as IMovement[];
         this.lastFetch = now;
         return this.cache;
     }
